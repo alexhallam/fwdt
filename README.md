@@ -54,7 +54,7 @@ What makes a good fast logger.
 
 The thing that makes manual logging slow is, in part, proportional to the number of characters that must be entered. If a logger can generate the correct final output without needing as many characters then it accomplished its task.
 
-In the above example there result desired has 440 characters. The input required was 79 (excluding the template text). This saves 161 charcters! 
+In the above example there result desired has 440 characters. The input required was 279 (excluding the template text). This saves 161 charcters! 
 
 ```
 > cat test/data/ham_log/data.txt | wc -m
