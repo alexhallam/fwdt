@@ -1,6 +1,6 @@
-#fwdt
+# fwdt
 
-#install
+# install
 ```sh
 git clone <this>
 cd fwdt
