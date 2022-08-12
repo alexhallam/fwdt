@@ -1,9 +1,10 @@
 <h1 align="center">Few Word Do Trick (fwdt)</h1>
 <p align="center">Few Word Do Trick (fwdt) is a cross-platform general purpose fast logger that supports templated designs</p>
 
-![kevin](img/kevin.gif)
 
-
+ <p align="center">
+    <img src="https://media.giphy.com/media/DMNPDvtGTD9WLK2Xxa/giphy.gif" alt="alternate text">
+ </p>
 
 ```txt
 > cat test/data/ham_log/data.txt 
