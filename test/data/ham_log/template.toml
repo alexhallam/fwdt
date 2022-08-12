@@ -1,0 +1,24 @@
+# Everything is a toml table
+# [table]
+# key = "value"
+
+[meta]
+title = "pota config"
+version = "0.0.1"
+
+# header: defined at the top of the file. must be key value matched
+[constants]
+fields = ["mycall", "operator"]
+
+# groups: the only rows that do not start with a time and must be an option from a list
+[groups]
+band = ["20m", "40m"]
+mode = ["cw", "ssb"]
+
+
+# obs: change every line or accepts the previous value. Must be fully defined on first line of first entry
+[obs]
+fields = ["call", "freq", "sent", "received"]
+
+# General structure of output csv/db
+# index date time datetime <constants> <groups> <obs>
