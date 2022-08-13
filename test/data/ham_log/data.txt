@@ -7,11 +7,12 @@ date 2022-08-08
 40m cw
 2307 qr3e 7.2230 599 599
 11 kf1rx 7.0560 
-13 kn6h
-7 ae0bc
-20m cw
+13 kn6h 
+7 ae0bc 
+20m ssb
 2307 qr3e 14.2230 599 599
 11 kf1rx 14.0560 
+40m cw
 13 kn6h
 7 ae0bc
 date 2022-08-10
@@ -20,5 +21,9 @@ date 2022-08-10
 11 kf1rx 7.0560 
 13 kn6h
 7 ae0bc
+
+
+
+
 
 

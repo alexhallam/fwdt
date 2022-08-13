@@ -228,20 +228,22 @@ fn main() {
     for line in file.lines() {
         //  Clean file
         // remove comments and empty lines
-        if regex_line_comment.is_match(line.as_ref().unwrap().as_str()) {
-            continue;
-        }
-        if regex_trailing_white_space.is_match(line.as_ref().unwrap().as_str()) {
+
+        let line_string = regex_trailing_white_space
+            .replace_all(line.as_ref().unwrap().as_str(), "")
+            .into_owned();
+
+        if regex_line_comment.is_match(line_string.as_str()) {
             continue;
         }
 
-        if regex_blank_line.is_match(line.as_ref().unwrap().as_str()) {
+        if regex_blank_line.is_match(line_string.as_str()) {
             continue;
         }
 
         //    let mut numbered_file: BTreeMap<usize, LineData> = BTreeMap::new();
         let data_and_config = DataAndConfig {
-            string: line.as_ref().unwrap(),
+            string: line_string.as_str(),
             constant_keys: &constant_keys,
             group_keys: &group_keys,
             group_table: group_table,
@@ -260,7 +262,7 @@ fn main() {
         };
         if debug {
             // println!("{:?}", line.as_ref().unwrap().to_owned());
-            // println!("{:?}", line_data.clone());
+            println!("Line Data {:#?}", line_data.clone());
         }
         numbered_file.insert(i, line_data.clone());
 
@@ -275,7 +277,12 @@ fn main() {
                 btree_data_row.insert("date".to_owned(), line_data.clone().vec_entries[1].clone());
             }
             LineType::Group => {
-                btree_data_row.insert("group".to_owned(), line_data.clone().vec_entries[1].clone());
+                for i in 0..group_keys.len() {
+                    btree_data_row.insert(
+                        group_keys[i].to_owned(),
+                        line_data.clone().vec_entries[i].clone(),
+                    );
+                }
             }
             LineType::Observation => {
                 for i in 0..obs_keys.len() {
@@ -297,10 +304,10 @@ fn main() {
         };
 
         btree_df.insert(i, btree_data_row.clone());
-        // if debug {
-        //     println!("btree_data_row: {:?}", btree_data_row.clone());
-        //     println!("btree_df: {:?}", btree_df.clone());
-        // }
+        if debug {
+            println!("btree_data_row: {:?}", btree_data_row.clone());
+            //println!("btree_df: {:?}", btree_df.clone());
+        }
 
         i += 1;
     }
@@ -327,19 +334,84 @@ fn main() {
 
     let mut wtr = csv::Writer::from_writer(io::stdout());
 
+    // I have to be more careful here with collecting in the correct order
+    fn get_all_column_names_ordered(
+        constant_keys: Vec<String>,
+        group_keys: Vec<String>,
+        obs_keys: Vec<String>,
+        time: bool,
+    ) -> Vec<String> {
+        //<date><time>  |  low change --> high change   | high change ---------------> low change
+        //<date><time>  |  <constants>     <groups>     |  <obs_full_replace> <obs_right_replace>
+
+        let vec_time_stamp: Vec<String> = match time {
+            true => vec!["date".to_owned(), "time".to_owned()],
+            false => vec!["date".to_owned()],
+        };
+
+        let mut constant_keys_mut = constant_keys;
+        constant_keys_mut.retain(|x| *x != "date".to_owned());
+
+        let mut obs_keys_mut = obs_keys;
+        obs_keys_mut.retain(|x| *x != "time".to_owned());
+
+        [vec_time_stamp, constant_keys_mut, group_keys, obs_keys_mut].concat()
+    }
+
+    let constant_keys_owned: Vec<String> =
+        constant_keys.into_iter().map(|x| x.to_owned()).collect();
+    let group_keys_owned: Vec<String> = group_keys.into_iter().map(|x| x.to_owned()).collect();
+    let obs_keys: Vec<String> = obs_keys.into_iter().map(|x| x.to_owned()).collect();
+    let all_column_names_ordered =
+        get_all_column_names_ordered(constant_keys_owned, group_keys_owned, obs_keys, true);
+
+    //println!("all_column_names_ordered: {:?}", all_column_names_ordered);
     let col_names: Vec<&String> = btree_data_row.keys().collect();
 
-    wtr.write_record(col_names.clone());
+    wtr.write_record(all_column_names_ordered.clone());
+
+    //mapping btree: map btree index to  all_column_names_ordered index
+    let mut mapping_btree: BTreeMap<String, usize> = BTreeMap::new();
+    for i in 0..col_names.len() {
+        let index = col_names.iter().position(|&r| r == col_names[i]).unwrap();
+        let key = all_column_names_ordered[index].clone();
+        mapping_btree.insert(key, i);
+    }
+
+    // println!("mapping_btree {:?}", mapping_btree);
+    // println!("mapping_btree values {:?}", mapping_btree.values());
+    // println!("btree_df_values: {:?}", btree_df_values);
+
+    let mut mapping_btree_values: Vec<&usize> = mapping_btree.values().into_iter().collect();
+    let range = seq(mapping_btree_values.len());
+    let mut index_btree: BTreeMap<&usize, usize> = BTreeMap::new();
+    for i in 0..mapping_btree_values.len() {
+        index_btree.insert(mapping_btree_values[i], range[i]);
+    }
+
+    //println!("index_btree: {:?}", index_btree);
 
     for i in 0..btree_df_values.len() {
-        wtr.write_record(btree_df_values.get(&i).unwrap());
-        //println!("{:?}", btree_df_values.get(&i).unwrap());
+        //wtr.write_record(btree_df_values.get(&i).unwrap());
+        let rowwise_values_unordered = btree_df_values[&i]
+            .clone()
+            .into_iter()
+            .collect::<Vec<&String>>();
+        //println!("rowwise_values_unordered {:?}", rowwise_values_unordered);
+
+        let mut rowwise_values_ordered: Vec<&String> = Vec::new();
+        for j in 0..rowwise_values_unordered.len() {
+            let order_idx = index_btree.clone().get(&j).unwrap().to_owned();
+            rowwise_values_ordered.push(rowwise_values_unordered[order_idx])
+        }
+        //println!("rowwise_values_ordered {:?}", rowwise_values_ordered);
+        wtr.write_record(rowwise_values_ordered);
     }
 
-    if debug {
-        println!("{}", "--------------------debug--------------------");
-        //println!("btree_df_values: {:#?}", btree_df_values.clone());
-        println!("btree_data_row: {:#?}", btree_data_row.clone().keys());
-        println!("{}", "--------------------debug--------------------");
-    }
+    // if debug {
+    //     println!("{}", "--------------------debug--------------------");
+    //     println!("btree_df_values: {:#?}", btree_df_values.clone());
+    //     println!("btree_data_row: {:#?}", btree_data_row.clone().keys());
+    //     println!("{}", "--------------------debug--------------------");
+    // }
 }
