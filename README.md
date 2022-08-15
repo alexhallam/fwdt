@@ -72,27 +72,79 @@ When tufte came up with his design of a boxplot he got there by erasing the unne
 Here is an example of removing the unneccesary.
 
 ```
-        call  date       freq    group mycall operator received sent time 
-        qr3e  2022-08-08  7.2230 cw    wq8R   wq8R     599      599  2307 
-        kn6h  2022-08-08  7.2230 cw    wq8R   wq8R     599      599  2313   
-        ae0bc 2022-08-08  7.2230 cw    wq8R   wq8R     599      599  2317    
-        ae0bc 2022-08-08  7.2230 cw    wq8R   wq8R     599      599  2317    
-        qr3e  2022-08-08 14.223  cw    wq8R   wq8R     599      599  2307 
-        kn6h  2022-08-08 14.223  cw    wq8R   wq8R     599      599  2313   
-        ae0bc 2022-08-08 14.223  cw    wq8R   wq8R     599      599  2317    
-        ae0bc 2022-08-10 14.223  cw    wq8R   wq8R     599      599  2317  
+        # table 1 - desired output
+        date       time mycall operator band mode call  freq    sent received 
+        2022-08-08 2307 wq8R   wq8R     40m  cw   qr3e   7.2230 599  559      
+        2022-08-08 2311 wq8R   wq8R     40m  cw   kf1rx  7.2230 599  559      
+        2022-08-08 2313 wq8R   wq8R     40m  cw   kn6h   7.2230 599  559      
+        2022-08-08 2317 wq8R   wq8R     40m  cw   ae0bc  7.2230 533  559      
+        2022-08-08 2321 wq8R   wq8R     20m  cw   qr3g   14.223 599  555         
+        2022-08-08 2322 wq8R   wq8R     20m  cw   kf1rz  14.223 599  599         
+        2022-08-08 2322 wq8R   wq8R     20m  cw   kn0h   14.223 599  599         
+        2022-08-08 2324 wq8R   wq8R     20m  cw   ae0gc  14.223 599  599    
 ```
 
 ```
-        call  date        freq    group mycall operator received sent time 
-        qr3e  2022-08-08  7.2230  cw    wq8R   wq8R     599      599  2307 
-        kn6h                                                           13   
-        ae0bc                                                           7    
-        ae0bc                                                           7    
-        qr3e              14.223                                      2307 
-        kn6h                                                            13   
-        ae0bc                                                            7    
-        ae0bc                                                            7  
+	# table 2 - erase unnecesary characters
+        date       time mycall operator band mode call  freq    sent received 
+        2022-08-08 2307 wq8R   wq8R     40m  cw   qr3e   7.2230 599  559      
+                   11                             kf1rx              
+                   13                             kn6h                
+                   7                              ae0bc          33     
+                   2321                 20m       qr3e   14.223  99   55   
+                   2                              kf1rx               99   
+                   2                              kn6h               
+                   4                              ae0bc              
+```
+
+```
+        # table 3 - types of columns
+        |time_stamp---| constants-----| goups---| observations----------------------|
+                                                | full_replace |right_replace-------|
+        date       time mycall operator band mode call  	freq    sent received 
+        2022-08-08 2307 wq8R   wq8R     40m  cw   qr3e  	 7.2230 599  559      
+                   11                             kf1rx 	             
+                   13                             kn6h  	              
+                   7                              ae0bc 	         33     
+                   2321                 20m       qr3e  	 14.223       55   
+                   2                              kf1rx 	              99   
+                   2                              kn6h  	             
+                   4                              ae0bc 	             
+
+```
+
+```
+        # file 1 - example log which generates table 1
+        mycall wq8r
+        operator wq8r
+        date 2022-08-08
+        40m cw
+        2307 qr3e  7.2230 599 599
+        11   kf1rx
+        13   kn6h 
+        7    ae0bc 0 33 
+	    20m
+        2321 qr3e  14.223 99 55
+        2    kf1rx 3 9 9
+        2    kn6h 
+        4    ae0bc
+```
+
+```
+	# file 2 - grammer of log file 1
+        <constant_key> <constant value>
+        <constant_key> <constant value>
+        date <date>
+        <group_value> <group_value>
+        <time_utc_hhmm> <obs_full_replace> <obs_right_replace> <obs_right_replace> <obs_right_replace>
+        <time_utc_hhmm> <obs_full_replace> <obs_right_replace> <obs_right_replace> <obs_right_replace>
+        <time_utc_hhmm> <obs_full_replace> <obs_right_replace> <obs_right_replace> <obs_right_replace>
+        <time_utc_hhmm> <obs_full_replace> <obs_right_replace> <obs_right_replace> <obs_right_replace>
+        <group_value> 
+        <time_utc_hhmm> <obs_full_replace> <obs_right_replace> <obs_right_replace> <obs_right_replace>
+        <time_utc_hhmm> <obs_full_replace> <obs_right_replace> <obs_right_replace> <obs_right_replace>
+        <time_utc_hhmm> <obs_full_replace> <obs_right_replace> <obs_right_replace> <obs_right_replace>
+        <time_utc_hhmm> <obs_full_replace> <obs_right_replace> <obs_right_replace> <obs_right_replace>
 ```
 
 The above is rearranged into a tree-like structure.
@@ -113,7 +165,81 @@ git clone <this>
 cd fwdt
 cargo build
 ```
-# example
+# Example Logs
+
+There are iphone apps that specialize in each of the following tasks. `fwdt` makes it easy to log personal data and host how you would like.
+
+Important personal data is relatively easy to log with `fwdt`. 
+
+Along with personal data `fwdt` may be a useful tool for observational experiment tracking. 
+
+# Weight Lifting Log
+
+```
+
+```
+
+# Weight Log
+
+```
+
+```
+
+
+# Calorie Intake Log
+
+```
+
+```
+
+# Reading Log
+
+```
+
+```
+
+# Saving Rate Log
+
+```
+
+```
+
+# Observational Experiment
+
+Not all data is equally character compressible. In this example every observation is a full replace. For this reason the only thing that can be pulled 
+out is the date and group. Still, this was a randomized experiment so the groups alternated frequently.
+
+```
+helicopter,wing_len,student,time
+date 2017-07-17
+A
+1 5.5 5.29
+2 6 4.54
+B
+3 6 3.78
+A
+4 4.5 4.57
+5 5 3.43
+6 5.5 4.54
+B
+7 6 5.9
+8 4.5 3.49
+A
+9 4.5 4.08
+10 5 3.98
+B
+11 5.5 5.52
+12 5 3.2
+A
+13 4.5 3.96
+14 5 4.4
+B
+15 6 3.96
+16 5.5 5.56
+```
+
+https://r-data.pmagunia.com/dataset/r-dataset-package-datasets-toothgrowth
+
 ```sh
 ./target/debug/fwdt test/data/ham_log/data.txt test/data/ham_log/template.toml 
 ```

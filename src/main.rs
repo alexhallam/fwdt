@@ -22,7 +22,7 @@ use structopt::StructOpt;
 #[derive(StructOpt)]
 #[structopt(
     name = "fwdt",
-    about = "Few Word Do Trick (fwdt) is a fast logger for manual data entry that supports templates. 📝🔥\n
+    about = "📝🔥 Few Word Do Trick (fwdt) is a fast logger for manual data entry that supports templates. 📝🔥\n
     Example Usage:
     wget data
     wget template
@@ -40,7 +40,7 @@ struct Cli {
     template: Option<PathBuf>,
 }
 fn main() {
-    let debug: bool = false;
+    let debug: bool = true;
 
     let opt = Cli::from_args();
 
@@ -60,7 +60,8 @@ fn main() {
     // get the following from the toml file
     //      constants
     //      groups
-    //      observations
+    //      obs
+    //      obs_full_replace
     //      See: https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=e1236a33f78ac162b5887fc311a38722
     let mut constant_keys: Vec<&str> = toml_parse["constants"]["fields"]
         .as_array()
@@ -89,7 +90,7 @@ fn main() {
     //  string
     //  space_count
     #[derive(Debug)]
-    struct DataAndConfig<'a> {
+    struct StructDataAndConfig<'a> {
         string: &'a str,
         constant_keys: &'a Vec<&'a str>,
         group_keys: &'a Vec<&'a String>,
@@ -98,7 +99,7 @@ fn main() {
         delim: &'a str,
     }
 
-    impl DataAndConfig<'_> {
+    impl StructDataAndConfig<'_> {
         fn which_line_type(&self) -> LineType {
             let string = self.string;
             let constant_keys = self.constant_keys;
@@ -183,7 +184,7 @@ fn main() {
     }
 
     #[derive(Debug, Clone)]
-    struct LineData {
+    struct StructLineData {
         num: usize,
         string: String,
         num_entries: usize,
@@ -209,7 +210,7 @@ fn main() {
         return vec;
     }
 
-    let mut numbered_file: BTreeMap<usize, LineData> = BTreeMap::new();
+    let mut numbered_file: BTreeMap<usize, StructLineData> = BTreeMap::new();
     let mut btree_data_row: BTreeMap<String, String> = BTreeMap::new();
     let mut btree_df: BTreeMap<usize, BTreeMap<String, String>> = BTreeMap::new();
 
@@ -242,17 +243,17 @@ fn main() {
         }
 
         //    let mut numbered_file: BTreeMap<usize, LineData> = BTreeMap::new();
-        let data_and_config = DataAndConfig {
+        let data_and_config = StructDataAndConfig {
             string: line_string.as_str(),
             constant_keys: &constant_keys,
             group_keys: &group_keys,
             group_table: group_table,
             obs_keys: &obs_keys,
-            delim: " ",
+            delim: "|",
         };
         //let line_type = which_line_type(line.as_ref().unwrap(), &constant_keys, &group_keys);
         //let num_delim = count_entries(line.as_ref().unwrap().to_owned(), " ".to_owned());
-        let line_data = LineData {
+        let line_data = StructLineData {
             num: i,
             string: data_and_config.string.to_owned(),
             num_entries: data_and_config.count_entries(),
@@ -314,7 +315,7 @@ fn main() {
 
     // the node entry is the most complete entry and should be the first
     // of the observations
-    let mut complete_observation_entries: BTreeMap<usize, LineData> = numbered_file.clone();
+    let mut complete_observation_entries: BTreeMap<usize, StructLineData> = numbered_file.clone();
     complete_observation_entries.retain(|_, v| v.is_maximized == true);
     let obs_node_key: &usize = complete_observation_entries.iter().next().unwrap().0;
 

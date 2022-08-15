@@ -30,6 +30,10 @@ mode = ["cw", "ssb"]
 fields = ["call", "freq", "sent", "received"]
 full_replace = ["call"]
 
+[timestamp]
+# if this is true then the start of the first observation line must be a 4 digit hhmm time
+first_observation_column_is_time = true
+
 [includes]
 # for library use. developers can add any craziness they want here
 # please document behavior well for these keys/values.
