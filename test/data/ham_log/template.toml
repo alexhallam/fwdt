@@ -3,9 +3,9 @@
 # key = "value"
 
 # meta: anything can go in meta. This allows template creators to name, version, describe their templates. `fwdt` does not use `meta`.
-[meta]
-title = "pota config"
-version = "0.0.1"
+# [meta]
+# title = "pota config"
+# version = "0.0.1"
 
 # header: these columns do not change, but are needed in every row of the final result. defined at the top of the file. must be key value matched
 [constants]
@@ -30,9 +30,14 @@ mode = ["cw", "ssb"]
 fields = ["call", "freq", "sent", "received"]
 full_replace = ["call"]
 
-[timestamp]
-# if this is true then the start of the first observation line must be a 4 digit hhmm time
-first_observation_column_is_time = true
+[nullable] # never needed. if input is neccesary at some point then surround in <value>
+fields = ["p2p"]
+
+[arguments]
+delim = "|" # default is "|"
+timestamp = true  # 4 digit hhmm
+date = true # default is true
+date_format = '%F' # default is `%F`
 
 [includes]
 # for library use. developers can add any craziness they want here
