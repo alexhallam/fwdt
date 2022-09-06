@@ -2,9 +2,7 @@
 #![allow(unused_variables)]
 // auto rerun
 // cargo install cargo-watch
-// cargo watch -c -w src -x run
-// kevin
-// fwdt
+// cargo run test/data/ham_log/data.txt test/data/ham_log/template.toml
 use std::fs::read_to_string;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -68,6 +66,7 @@ struct StructTableMeta {
 struct StructTemplate {
     constant_values: Option<Vec<String>>,
     group_keys: Option<Vec<String>>,
+    //group_values: Option<Vec<String>>,
     obs_keys: Option<Vec<String>>,
     obs_full_replace_keys: Option<Vec<String>>,
     nullable: Option<Vec<String>>,
@@ -117,6 +116,29 @@ impl StructTemplate {
         ordered_vec.append(&mut nullable);
         return ordered_vec;
     }
+    fn ordered_vector_of_col_names_observations(self: StructTemplate) -> Vec<String> {
+        let mut obs_full_replace_keys: Vec<String> = self.obs_full_replace_keys.unwrap();
+        let mut obs_keys: Vec<String> = self.obs_keys.unwrap();
+        let mut date: Vec<String> = if self.date {
+            vec!["date".to_owned()]
+        } else {
+            vec!["".to_owned()]
+        };
+        let mut time: Vec<String> = if self.timestamp {
+            vec!["time".to_owned()]
+        } else {
+            vec!["".to_owned()]
+        };
+
+        // 1. run a deduplicating algorithm here to make sure the the full replace columns are before the standard observation columns
+        // 2. Drop columns with null outputs
+
+        let mut ordered_vec: Vec<String> = Vec::new();
+        ordered_vec.append(&mut date);
+        ordered_vec.append(&mut time);
+        ordered_vec.append(&mut obs_keys);
+        return ordered_vec;
+    }
 }
 
 impl StructTemplateDeserializer {
@@ -132,6 +154,27 @@ impl StructTemplateDeserializer {
             None => None,
         }
     }
+    // fn template_to_group_values(self: StructTemplateDeserializer) -> Option<Vec<String>> {
+    //     let v: Option<Map<String, Value>> = self.groups;
+    //     //println!("{:?}", v.clone().unwrap().values().collect::<Vec<_>>());
+    //     match v {
+    //         Some(v) => {
+    //             let temp_keys = v
+    //                 .keys()
+    //                 .into_iter()
+    //                 .map(|x| x.to_owned())
+    //                 .collect::<Vec<String>>();
+
+    //             let vec_values = v
+    //                 .values()
+    //                 .into_iter()
+    //                 .map(|x| x.as_array().unwrap().to_owned())
+    //                 .collect();
+    //             Some(vec_values)
+    //         }
+    //         None => None,
+    //     }
+    // }
 
     fn template_to_constant_values(self: StructTemplateDeserializer) -> Option<Vec<String>> {
         let constants: Option<Map<String, Value>> = self.constants.clone();
@@ -312,22 +355,117 @@ impl StructTemplateDeserializer {
 }
 
 // Data File Parsing
+#[derive(Debug, Clone)]
+struct StructNumberedFile {
+    // much information can be derived from the sting alone
+    // this struct exists mostly as an object with impls that
+    // will fill the StructLineData object
+    line_number: usize,
+    string: String,
+}
 
+// struct StructTemplate {
+//     constant_values: Option<Vec<String>>,
+//     group_keys: Option<Vec<String>>,
+//     obs_keys: Option<Vec<String>>,
+//     obs_full_replace_keys: Option<Vec<String>>,
+//     nullable: Option<Vec<String>>,
+//     timestamp: bool,
+//     date: bool,
+//     date_format: String,
+//     delim: String,
+// }
+
+fn is_constant_line(string: &str, template: StructTemplate) -> bool {
+    let mut n = 0;
+    for i in 0..template.constant_values.clone().unwrap().len() {
+        if string.contains(&template.constant_values.clone().unwrap()[i]) {
+            n += 1;
+        }
+    }
+    return n == 1;
+}
+
+fn is_group_line(
+    string: &str,
+    template: StructTemplate,
+    raw_template: StructTemplateDeserializer,
+) -> bool {
+    let group_keys = template.group_keys.clone();
+    //let group_values = template.group_values.clone();
+    let raw_template_groups = raw_template.groups.unwrap();
+    println!(
+        "raw_template_groups {:?}",
+        raw_template_groups["band"]
+            .as_array()
+            .unwrap()
+            .into_iter()
+            .map(|x| x.as_str().unwrap().to_owned())
+            .collect::<Vec<String>>()
+    );
+    let delim = template.delim.clone();
+    let vec_string: Vec<String> = string.split(&delim).map(|x| x.to_owned()).collect();
+
+    //let mut n = 0;
+    //for i in 0..group_keys.clone().unwrap().len() {
+    //     let key: String = group_keys.clone().unwrap().get(i).unwrap().to_owned();
+    //     let array = group_values.clone().to_owned().unwrap();
+    //     let matches = vec_string // cartisian product
+    //         .clone()
+    //         .into_iter()
+    //         .flat_map(|x| std::iter::repeat(x).zip(array.clone()))
+    //         .filter(|(a, b)| a == b)
+    //         .collect::<Vec<_>>();
+    //     println!("array {:?}", array);
+    //     println!("vec_string {:?}", vec_string);
+    //     if matches.len() > 0 {
+    //         n += 1
+    //     }
+    // }
+    // return n > 0;
+    false
+}
+
+impl StructNumberedFile {
+    // A line is either a Header, Group, Date, or Observation.
+    // This lines are distinct, non-overlapping.
+    // An Observation line is a catchall for anything that is not a header, group, or date
+    fn which_line_type(
+        &self,
+        template: StructTemplate,
+        raw_template: StructTemplateDeserializer,
+    ) -> LineType {
+        if self.string.contains("date") {
+            return LineType::Date;
+        } else if is_constant_line(self.string.as_str(), template.clone()) {
+            return LineType::Header;
+        } else if is_group_line(self.string.as_ref(), template.clone(), raw_template.clone()) {
+            return LineType::Group;
+        } else {
+            return LineType::Observation;
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 struct StructLineData {
+    // does this need to be in loop or can work be done on NumberedFile struct after words?
     line_number: usize,
     string: String,
     num_entries: usize,
     line_type: LineType,
     vec_entries: Vec<String>,
-    // is_maximized: bool,
     is_full: bool, // are observations are complete
     contains_nullable_entry: bool,
-    dict_line_data: BTreeMap<String, String>, // insert each key that exists in each line
-    dict_line_data_previous: Option<BTreeMap<String, String>>, // in
-    obs: BTreeMap<String, String>,            // right replace observations
-    nullable: BTreeMap<String, String>,
-    row_to_insert: Vec<String>,
+    dict_line_data: Option<StructNumberedFile>, // insert each key that exists in each line
+    dict_line_data_previous: Option<StructNumberedFile>, // in
+                                                // obs: BTreeMap<String, String>,            // right replace observations
+                                                // nullable: BTreeMap<String, String>,
+                                                // row_to_insert: Vec<String>,
 }
+
+// if line is first observation then iterate through previous btrees to collect all data needed for initial row.
+//btree<column_name, value>
 
 #[derive(Debug, Clone, Copy)]
 enum LineType {
@@ -335,22 +473,21 @@ enum LineType {
     Group,
     Date,
     Observation,
-    ObservationPartial,
 }
 
 fn main() {
-    // make a toml struct
-    // eventually allow for serde struct for library integration?
-    // better data struct kjl
-
+    // when the first observation appears make the mother_row.
+    //      - Look at previous btree and current line and fill in a dictionary with all needed keys.
+    // use template meta data to get the number of columns needed
+    // use the meta data to get the ordering of the columns
     let debug: bool = true;
-
     let opt = Cli::from_args();
 
     // Regex helpers
     let regex_line_comment = Regex::new("^[[:blank:]]*#").unwrap();
     let regex_trailing_white_space = Regex::new(r#"[ \t]+$"#).unwrap();
     let regex_blank_line = Regex::new(r#"^\s*$"#).unwrap();
+    let regex_null_line = Regex::new(r#"(<.*?>)"#).unwrap();
 
     // read toml file
     let toml_file = read_to_string(&opt.template.unwrap().as_path()).unwrap();
@@ -361,11 +498,10 @@ fn main() {
     let file: BufReader<&File> = BufReader::new(&fp);
     let template: StructTemplateDeserializer = toml::from_str(toml_file.as_str()).unwrap();
 
-    //println!("{:#?}", template.groups);
-
     let templ = StructTemplate {
         constant_values: template.clone().template_to_constant_values(),
         group_keys: template.clone().template_to_group_keys(),
+        //group_values: template.clone().template_to_group_values(),
         obs_keys: template.clone().template_to_obs_values(),
         obs_full_replace_keys: template.clone().template_to_obs_full_replace_keys(),
         nullable: template.clone().template_to_nullable(),
@@ -375,178 +511,25 @@ fn main() {
         date_format: template.clone().template_to_date_format(),
     };
 
-    println!("{:#?}", templ);
-
     let table_meta = StructTableMeta {
         number_of_cols: templ.clone().number_of_cols(),
         ordered_vector_of_col_names: templ.clone().ordered_vector_of_col_names(),
     };
 
-    println!("{:#?}", table_meta);
+    // btree_numbered file is a simple dictionary of line numbers and the string captured on this line (comments and spaces removed)
+    let mut btree_numbered_file: BTreeMap<usize, StructNumberedFile> = BTreeMap::new();
+    // btree_line_data is a complex dictionary with an index as a key and derived information as the values
+    let mut btree_line_data: BTreeMap<usize, StructLineData> = BTreeMap::new();
+    // hashmap_db is a completed dictionary of column names as keys and vectors and values
+    let mut hashmap_db: HashMap<String, Vec<String>> = HashMap::new();
 
-    // // get the following from the toml file
-    // //      constants
-    // //      groups
-    // //      obs
-    // //      obs_full_replace
-    // //      See: https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=e1236a33f78ac162b5887fc311a38722
-    // let mut constant_keys: Vec<&str> = toml_parse["constants"]["fields"]
-    //     .as_array()
-    //     .unwrap()
-    //     .into_iter()
-    //     .map(|x| x.as_str().unwrap())
-    //     .collect();
-    // let group_keys: Vec<_> = toml_parse["groups"].as_table().unwrap().keys().collect();
-    // let group_table: &Map<String, Value> = toml_parse["groups"].as_table().unwrap();
-    // //println!("{:?}", group_table);
-
-    // let mut toml_obs_keys: Vec<&str> = toml_parse["obs"]["fields"]
-    //     .as_array()
-    //     .unwrap()
-    //     .into_iter()
-    //     .map(|x| x.as_str().unwrap())
-    //     .collect();
-    // let mut obs_keys = vec!["time"];
-    // obs_keys.append(&mut toml_obs_keys);
-
-    // let mut date_key = vec!["date"];
-    // constant_keys.append(&mut date_key);
-
-    // make empty HashMap
-    //  i
-    //  string
-    //  space_count
-    // #[derive(Debug)]
-    // struct StructDataAndConfig<'a> {
-    //     string: &'a str,
-    //     constant_keys: &'a Vec<&'a str>,
-    //     group_keys: &'a Vec<&'a String>,
-    //     group_table: &'a Map<std::string::String, Value>,
-    //     obs_keys: &'a Vec<&'a str>,
-    //     delim: &'a str,
-    // }
-
-    // impl StructDataAndConfig<'_> {
-    //     fn which_line_type(&self) -> LineType {
-    //         let string = self.string;
-    //         let constant_keys = self.constant_keys;
-    //         //let obs_keys = self.obs_keys;
-    //         let group_keys = self.group_keys;
-    //         let group_table = self.group_table;
-    //         let obs_keys = self.obs_keys;
-    //         if string.contains("date") {
-    //             return LineType::Date;
-    //         } else if is_constant_line(string, constant_keys) {
-    //             return LineType::Header;
-    //         } else if is_group_line(string, group_keys, group_table, self.delim) {
-    //             return LineType::Group;
-    //         } else if is_observation(string, obs_keys, self.delim) {
-    //             return LineType::Observation;
-    //         } else {
-    //             return LineType::ObservationPartial;
-    //         }
-    //     }
-
-    //     fn count_entries(&self) -> usize {
-    //         let string = self.string;
-    //         let vec: Vec<&str> = string.split(self.delim).collect();
-    //         return vec.len();
-    //     }
-
-    //     fn is_maximized(&self) -> bool {
-    //         let string = self.string;
-    //         let obs_keys: &Vec<&str> = self.obs_keys;
-    //         let vec: Vec<&str> = string.split(self.delim).collect();
-    //         return obs_keys.len() == vec.len();
-    //     }
-
-    //     fn make_vec_entries(&self) -> Vec<String> {
-    //         let string = self.string;
-    //         let vec: Vec<String> = string
-    //             .split(self.delim)
-    //             .into_iter()
-    //             .map(|x| x.to_owned())
-    //             .collect();
-    //         return vec;
-    //     }
-    // } // DataAndConfig Impl
-
-    // fn is_constant_line(string: &str, constant_keys: &Vec<&str>) -> bool {
-    //     let mut n = 0;
-    //     for i in 0..constant_keys.len() {
-    //         if string.contains(constant_keys[i]) {
-    //             n += 1;
-    //         }
-    //     }
-    //     return n == 1;
-    // }
-
-    // fn is_group_line(
-    //     string: &str,
-    //     group_keys: &Vec<&String>,
-    //     group_table: &Map<String, Value>,
-    //     delim: &str,
-    // ) -> bool {
-    //     let vec_string: Vec<String> = string.split(delim).map(|x| x.to_owned()).collect();
-    //     let mut n = 0;
-    //     for i in 0..group_keys.len() {
-    //         let key = group_keys.clone().get(i).unwrap().to_owned();
-    //         let array = group_table[key].clone().try_into::<Vec<String>>().unwrap();
-    //         let matches = vec_string // cartisian product
-    //             .clone()
-    //             .into_iter()
-    //             .flat_map(|x| std::iter::repeat(x).zip(array.clone()))
-    //             .filter(|(a, b)| a == b)
-    //             .collect::<Vec<_>>();
-    //         if matches.len() > 0 {
-    //             n += 1
-    //         }
-    //     }
-    //     return n > 0;
-    // }
-
-    // fn is_observation(string: &str, obs_keys: &Vec<&str>, delim: &str) -> bool {
-    //     let vec_string: Vec<String> = string.split(delim).map(|x| x.to_owned()).collect();
-    //     return vec_string.len() == obs_keys.len();
-    // }
-
-    // #[derive(Debug, Clone)]
-    // struct StructLineData {
-    //     num: usize,
-    //     string: String,
-    //     num_entries: usize,
-    //     line_type: LineType,
-    //     vec_entries: Vec<String>,
-    //     is_maximized: bool,
-    // }
-
-    // fn seq(stop: usize) -> Vec<usize> {
-    //     let mut vec = Vec::new();
-    //     for i in 0..stop {
-    //         vec.push(i);
-    //     }
-    //     return vec;
-    // }
-
-    let mut numbered_file: BTreeMap<usize, StructLineData> = BTreeMap::new();
     // let mut btree_data_row: BTreeMap<String, String> = BTreeMap::new();
     // let mut btree_df: BTreeMap<usize, BTreeMap<String, String>> = BTreeMap::new();
 
-    // if debug {
-    //     println!("{}", "--------------------debug--------------------");
-    //     println!("header keys: {:?}", constant_keys);
-    //     println!("group keys: {:?}", group_keys);
-    //     println!("group_table: {:?}", group_table);
-    //     println!("observation keys: {:?}", obs_keys);
-    //     println!("hash_map_data len: {:?}", numbered_file.len());
-    //     println!("constant_keys len: {:?}", constant_keys.len());
-    //     println!("{}", "--------------------debug--------------------");
-    // }
-
     let mut i = 0;
     for line in file.lines() {
-        //  Clean file
-        // remove comments and empty lines
+        //     //  Clean file
+        //     // remove comments and empty lines
 
         let line_string = regex_trailing_white_space
             .replace_all(line.as_ref().unwrap().as_str(), "")
@@ -560,82 +543,123 @@ fn main() {
             continue;
         }
 
-        //    let mut numbered_file: BTreeMap<usize, LineData> = BTreeMap::new();
-        let data_and_config = StructTemplate {
-            string: line_string.as_str(),
-            constant_keys: &constant_keys,
-            group_keys: &group_keys,
-            group_table: group_table,
-            obs_keys: &obs_keys,
-            delim: "|",
-        };
-
-        // instead of data and config use template. missing line_string.as_str()
-        // ----make count_entries an implimentation of StructLineData
-        // ----make which line type an implimantation of StructLineData
-
-        //let line_type = which_line_type(line.as_ref().unwrap(), &constant_keys, &group_keys);
-        //let num_delim = count_entries(line.as_ref().unwrap().to_owned(), " ".to_owned());
-
-        let line_data = StructLineData {
+        let struct_numbered_file = StructNumberedFile {
             line_number: i,
             string: line_string.as_str().to_owned(),
-            num_entries: data_and_config.count_entries(),
-            line_type: data_and_config.which_line_type(),
-            vec_entries: data_and_config.make_vec_entries(),
-            is_maximized: data_and_config.is_maximized(),
-        };
-        if debug {
-            // println!("{:?}", line.as_ref().unwrap().to_owned());
-            println!("Line Data {:#?}", line_data.clone());
-        }
-        numbered_file.insert(i, line_data.clone());
-
-        match line_data.line_type {
-            LineType::Header => {
-                btree_data_row.insert(
-                    line_data.clone().vec_entries[0].clone(),
-                    line_data.clone().vec_entries[1].clone(),
-                );
-            }
-            LineType::Date => {
-                btree_data_row.insert("date".to_owned(), line_data.clone().vec_entries[1].clone());
-            }
-            LineType::Group => {
-                for i in 0..group_keys.len() {
-                    btree_data_row.insert(
-                        group_keys[i].to_owned(),
-                        line_data.clone().vec_entries[i].clone(),
-                    );
-                }
-            }
-            LineType::Observation => {
-                for i in 0..obs_keys.len() {
-                    btree_data_row.insert(
-                        obs_keys[i].to_owned(),
-                        line_data.clone().vec_entries[i].clone(),
-                    );
-                }
-            }
-            LineType::ObservationPartial => {
-                let entries = line_data.clone().vec_entries.clone();
-                for i in 0..entries.len() {
-                    btree_data_row.insert(
-                        obs_keys[i].to_owned(),
-                        line_data.clone().vec_entries[i].clone(),
-                    );
-                }
-            }
         };
 
-        btree_df.insert(i, btree_data_row.clone());
-        if debug {
-            println!("btree_data_row: {:?}", btree_data_row.clone());
-            //println!("btree_df: {:?}", btree_df.clone());
-        }
+        btree_numbered_file.insert(i, struct_numbered_file.clone());
 
-        i += 1;
+        // use btree to grab previous entries!
+        let line_data = StructLineData {
+            line_number: struct_numbered_file.clone().line_number,
+            string: struct_numbered_file.clone().string,
+            num_entries: line_string
+                .as_str()
+                .to_owned()
+                .split(&templ.delim)
+                .into_iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>()
+                .len(), // replace with delim logic
+            line_type: struct_numbered_file.which_line_type(templ.clone(), template.clone()),
+            vec_entries: line_string
+                .as_str()
+                .to_owned()
+                .split(&templ.delim)
+                .into_iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>(),
+            is_full: false,                 // are observations are complete
+            contains_nullable_entry: false, // ...
+            dict_line_data: btree_numbered_file.get(&i).map(|x| x.to_owned()), // insert each key that exists in each line
+            dict_line_data_previous: {
+                if i > 0 {
+                    btree_numbered_file
+                        .clone()
+                        .get(&(i - 1))
+                        .map(|x| x.to_owned())
+                } else {
+                    None
+                }
+            },
+        };
+
+        btree_line_data.insert(i, line_data.clone());
+
+        // If the line type is header then grab the column name and the entry as key and value
+        // If the line type is group then grab the column name from template and the value from the data
+        // If the line type is date then use the 'date'
+        // if the line type is an observation then use the observation set of columns
+
+        // println!("{:#?}", line_data.clone());
+        i += 1
     }
+    // println!("btree_numbered_file {:#?}", btree_numbered_file);
+    // println!("templ {:#?}", templ); // need to fix group values
+    // println!("btree_line_data {:#?}", btree_line_data); // need to fix LineTypeGroup
+
+    //println!("hashmap_db {:#?}", hashmap_db);
+    // println!("{:#?}", btree_line_data.clone());
+    //     let line_data = StructLineData {
+    //         line_number: i,
+    //         string: line_string.as_str().to_owned(),
+    //         num_entries: data_and_config.count_entries(),
+    //         line_type: data_and_config.which_line_type(),
+    //         vec_entries: data_and_config.make_vec_entries(),
+    //         is_maximized: data_and_config.is_maximized(),
+    //     };
+    //     if debug {
+    //         // println!("{:?}", line.as_ref().unwrap().to_owned());
+    //         println!("Line Data {:#?}", line_data.clone());
+    //     }
+    //     numbered_file.insert(i, line_data.clone());
+
+    //     match line_data.line_type {
+    //         LineType::Header => {
+    //             btree_data_row.insert(
+    //                 line_data.clone().vec_entries[0].clone(),
+    //                 line_data.clone().vec_entries[1].clone(),
+    //             );
+    //         }
+    //         LineType::Date => {
+    //             btree_data_row.insert("date".to_owned(), line_data.clone().vec_entries[1].clone());
+    //         }
+    //         LineType::Group => {
+    //             for i in 0..group_keys.len() {
+    //                 btree_data_row.insert(
+    //                     group_keys[i].to_owned(),
+    //                     line_data.clone().vec_entries[i].clone(),
+    //                 );
+    //             }
+    //         }
+    //         LineType::Observation => {
+    //             for i in 0..obs_keys.len() {
+    //                 btree_data_row.insert(
+    //                     obs_keys[i].to_owned(),
+    //                     line_data.clone().vec_entries[i].clone(),
+    //                 );
+    //             }
+    //         }
+    //         LineType::ObservationPartial => {
+    //             let entries = line_data.clone().vec_entries.clone();
+    //             for i in 0..entries.len() {
+    //                 btree_data_row.insert(
+    //                     obs_keys[i].to_owned(),
+    //                     line_data.clone().vec_entries[i].clone(),
+    //                 );
+    //             }
+    //         }
+    //     };
+
+    //     btree_df.insert(i, btree_data_row.clone());
+    //     if debug {
+    //         println!("btree_data_row: {:?}", btree_data_row.clone());
+    //         //println!("btree_df: {:?}", btree_df.clone());
+    //     }
+
+    //     i += 1;
+    // }
 
     // // the node entry is the most complete entry and should be the first
     // // of the observations

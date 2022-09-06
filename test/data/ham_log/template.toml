@@ -34,7 +34,7 @@ full_replace = ["call"]
 fields = ["p2p"]
 
 [arguments]
-delim = "|" # default is "|"
+delim = " " # default is "|"
 timestamp = true  # 4 digit hhmm
 date = true # default is true
 date_format = '%F' # default is `%F`
