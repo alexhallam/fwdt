@@ -8,6 +8,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::path::PathBuf;
+use std::ptr::hash;
 use std::thread::panicking;
 
 use csv;
@@ -56,7 +57,7 @@ struct StructTemplateDeserializer {
     includes: Option<Table>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 struct StructTableMeta {
     number_of_cols: u8,
     ordered_vector_of_col_names: Vec<String>,
@@ -391,39 +392,52 @@ fn is_group_line(
     template: StructTemplate,
     raw_template: StructTemplateDeserializer,
 ) -> bool {
-    let group_keys = template.group_keys.clone();
+    let group_keys = template.group_keys.clone().unwrap();
     //let group_values = template.group_values.clone();
-    let raw_template_groups = raw_template.groups.unwrap();
-    println!(
-        "raw_template_groups {:?}",
-        raw_template_groups["band"]
-            .as_array()
-            .unwrap()
-            .into_iter()
-            .map(|x| x.as_str().unwrap().to_owned())
-            .collect::<Vec<String>>()
-    );
+
+    let mut raw_template_groups = raw_template.groups.unwrap();
+
+    let mut value1 = raw_template_groups["band"]
+        .as_array()
+        .unwrap()
+        .into_iter()
+        .map(|x| x.as_str().unwrap().to_owned())
+        .collect::<Vec<String>>();
+    let mut value2 = raw_template_groups["mode"]
+        .as_array()
+        .unwrap()
+        .into_iter()
+        .map(|x| x.as_str().unwrap().to_owned())
+        .collect::<Vec<String>>();
+    let group_values = [value1, value2].concat();
+
+    // println!(
+    //     "raw_template_groups {:?}",
+    //     raw_template_groups["band"]
+    //         .as_array()
+    //         .unwrap()
+    //         .into_iter()
+    //         .map(|x| x.as_str().unwrap().to_owned())
+    //         .collect::<Vec<String>>()
+    // );
     let delim = template.delim.clone();
     let vec_string: Vec<String> = string.split(&delim).map(|x| x.to_owned()).collect();
 
-    //let mut n = 0;
-    //for i in 0..group_keys.clone().unwrap().len() {
-    //     let key: String = group_keys.clone().unwrap().get(i).unwrap().to_owned();
-    //     let array = group_values.clone().to_owned().unwrap();
-    //     let matches = vec_string // cartisian product
-    //         .clone()
-    //         .into_iter()
-    //         .flat_map(|x| std::iter::repeat(x).zip(array.clone()))
-    //         .filter(|(a, b)| a == b)
-    //         .collect::<Vec<_>>();
-    //     println!("array {:?}", array);
-    //     println!("vec_string {:?}", vec_string);
-    //     if matches.len() > 0 {
-    //         n += 1
-    //     }
-    // }
-    // return n > 0;
-    false
+    let mut n = 0;
+    for i in 0..group_keys.clone().len() {
+        let key: String = group_keys.clone().get(i).unwrap().to_owned();
+        // let array = group_values.clone().to_owned().unwrap();
+        let matches = vec_string // cartisian product
+            .clone()
+            .into_iter()
+            .flat_map(|x| std::iter::repeat(x).zip(group_values.clone()))
+            .filter(|(a, b)| a == b)
+            .collect::<Vec<_>>();
+        if matches.len() > 0 {
+            n += 1
+        }
+    }
+    return n > 0;
 }
 
 impl StructNumberedFile {
@@ -498,6 +512,8 @@ fn main() {
     let file: BufReader<&File> = BufReader::new(&fp);
     let template: StructTemplateDeserializer = toml::from_str(toml_file.as_str()).unwrap();
 
+    // println!("{:#?}", template);
+
     let templ = StructTemplate {
         constant_values: template.clone().template_to_constant_values(),
         group_keys: template.clone().template_to_group_keys(),
@@ -522,6 +538,14 @@ fn main() {
     let mut btree_line_data: BTreeMap<usize, StructLineData> = BTreeMap::new();
     // hashmap_db is a completed dictionary of column names as keys and vectors and values
     let mut hashmap_db: HashMap<String, Vec<String>> = HashMap::new();
+    for i in 0..table_meta.ordered_vector_of_col_names.len() {
+        hashmap_db.insert(
+            table_meta.clone().ordered_vector_of_col_names[i].clone(),
+            Vec::new(),
+        );
+    }
+
+    println!("hashmap_db {:?}", hashmap_db);
 
     // let mut btree_data_row: BTreeMap<String, String> = BTreeMap::new();
     // let mut btree_df: BTreeMap<usize, BTreeMap<String, String>> = BTreeMap::new();
@@ -587,6 +611,69 @@ fn main() {
 
         btree_line_data.insert(i, line_data.clone());
 
+        // make a match statement that takes in the line type and appends to the appropriate vector
+        match line_data.line_type {
+            // match on a LineType. Get the last value in the vector of that type. Append to that vector.
+            //
+            LineType::Date => {
+                let last_entry = hashmap_db.get("date").unwrap().to_owned();
+                let vec_date = vec![line_data.vec_entries[1].clone()];
+                hashmap_db.insert("date".to_string(), [last_entry, vec_date].concat());
+                let non_entry: Vec<String> = table_meta
+                    .ordered_vector_of_col_names
+                    .clone()
+                    .into_iter()
+                    .filter(|x| x.to_owned() != "date".to_string())
+                    .collect::<Vec<String>>();
+
+                for i in 0..non_entry.len() {
+                    let last_entry = hashmap_db.get(&non_entry[i]).unwrap().to_owned();
+                    hashmap_db.insert(
+                        non_entry[i].clone(),
+                        [last_entry.clone(), vec!["None".to_string()]].concat(),
+                    );
+                }
+            }
+            LineType::Header => {
+                let last_entry = hashmap_db
+                    .get(&line_data.vec_entries[0])
+                    .unwrap()
+                    .to_owned();
+                let vec_header_key = line_data.vec_entries[0].clone();
+                let vec_header_value = vec![line_data.vec_entries[1].clone()];
+                hashmap_db.insert(
+                    vec_header_key.clone(),
+                    [last_entry, vec_header_value].concat(),
+                );
+                let non_entry: Vec<String> = table_meta
+                    .ordered_vector_of_col_names
+                    .clone()
+                    .into_iter()
+                    .filter(|x| x.to_owned() != vec_header_key)
+                    .collect::<Vec<String>>();
+
+                for i in 0..non_entry.len() {
+                    let last_entry = hashmap_db.get(&non_entry[i]).unwrap().to_owned();
+                    hashmap_db.insert(
+                        non_entry[i].clone(),
+                        [last_entry.clone(), vec!["None".to_string()]].concat(),
+                    );
+                }
+            }
+            LineType::Group => {
+                // get vec entries
+                // match the value to the key
+                // put the value in the key
+                //
+                // for vec_enties get key and insert key value pair
+                let vec_ent = line_data.vec_entries;
+                for i in 0..vec_ent.len() {
+                    template.groups.unwrap().entry(&vec_ent[i])
+                }
+            }
+            LineType::Observation => {}
+        }
+
         // If the line type is header then grab the column name and the entry as key and value
         // If the line type is group then grab the column name from template and the value from the data
         // If the line type is date then use the 'date'
@@ -595,11 +682,14 @@ fn main() {
         // println!("{:#?}", line_data.clone());
         i += 1
     }
+    let cols = table_meta.clone().ordered_vector_of_col_names;
+    println!("cols {:?}", cols);
+
     // println!("btree_numbered_file {:#?}", btree_numbered_file);
     // println!("templ {:#?}", templ); // need to fix group values
-    // println!("btree_line_data {:#?}", btree_line_data); // need to fix LineTypeGroup
+    println!("btree_line_data {:?}", btree_line_data); // need to fix LineTypeGroup
 
-    //println!("hashmap_db {:#?}", hashmap_db);
+    println!("hashmap_db {:#?}", hashmap_db);
     // println!("{:#?}", btree_line_data.clone());
     //     let line_data = StructLineData {
     //         line_number: i,
