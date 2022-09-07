@@ -67,7 +67,7 @@ struct StructTableMeta {
 struct StructTemplate {
     constant_values: Option<Vec<String>>,
     group_keys: Option<Vec<String>>,
-    //group_values: Option<Vec<String>>,
+    group_hashmap: Option<HashMap<String, Vec<String>>>,
     obs_keys: Option<Vec<String>>,
     obs_full_replace_keys: Option<Vec<String>>,
     nullable: Option<Vec<String>>,
@@ -155,27 +155,14 @@ impl StructTemplateDeserializer {
             None => None,
         }
     }
-    // fn template_to_group_values(self: StructTemplateDeserializer) -> Option<Vec<String>> {
-    //     let v: Option<Map<String, Value>> = self.groups;
-    //     //println!("{:?}", v.clone().unwrap().values().collect::<Vec<_>>());
-    //     match v {
-    //         Some(v) => {
-    //             let temp_keys = v
-    //                 .keys()
-    //                 .into_iter()
-    //                 .map(|x| x.to_owned())
-    //                 .collect::<Vec<String>>();
-
-    //             let vec_values = v
-    //                 .values()
-    //                 .into_iter()
-    //                 .map(|x| x.as_array().unwrap().to_owned())
-    //                 .collect();
-    //             Some(vec_values)
-    //         }
-    //         None => None,
-    //     }
-    // }
+    fn template_to_group_map(
+        self: StructTemplateDeserializer,
+    ) -> Option<HashMap<String, Vec<String>>> {
+        let group_toml_map: Option<Map<String, Value>> = self.groups;
+        let group_hashmap: HashMap<String, Vec<String>> =
+            HashMap::deserialize(toml::Value::Table(group_toml_map.unwrap())).unwrap();
+        Some(group_hashmap)
+    }
 
     fn template_to_constant_values(self: StructTemplateDeserializer) -> Option<Vec<String>> {
         let constants: Option<Map<String, Value>> = self.constants.clone();
@@ -358,24 +345,12 @@ impl StructTemplateDeserializer {
 // Data File Parsing
 #[derive(Debug, Clone)]
 struct StructNumberedFile {
-    // much information can be derived from the sting alone
+    // much information can be derived from the string alone
     // this struct exists mostly as an object with impls that
     // will fill the StructLineData object
     line_number: usize,
     string: String,
 }
-
-// struct StructTemplate {
-//     constant_values: Option<Vec<String>>,
-//     group_keys: Option<Vec<String>>,
-//     obs_keys: Option<Vec<String>>,
-//     obs_full_replace_keys: Option<Vec<String>>,
-//     nullable: Option<Vec<String>>,
-//     timestamp: bool,
-//     date: bool,
-//     date_format: String,
-//     delim: String,
-// }
 
 fn is_constant_line(string: &str, template: StructTemplate) -> bool {
     let mut n = 0;
@@ -393,8 +368,6 @@ fn is_group_line(
     raw_template: StructTemplateDeserializer,
 ) -> bool {
     let group_keys = template.group_keys.clone().unwrap();
-    //let group_values = template.group_values.clone();
-
     let mut raw_template_groups = raw_template.groups.unwrap();
 
     let mut value1 = raw_template_groups["band"]
@@ -410,16 +383,6 @@ fn is_group_line(
         .map(|x| x.as_str().unwrap().to_owned())
         .collect::<Vec<String>>();
     let group_values = [value1, value2].concat();
-
-    // println!(
-    //     "raw_template_groups {:?}",
-    //     raw_template_groups["band"]
-    //         .as_array()
-    //         .unwrap()
-    //         .into_iter()
-    //         .map(|x| x.as_str().unwrap().to_owned())
-    //         .collect::<Vec<String>>()
-    // );
     let delim = template.delim.clone();
     let vec_string: Vec<String> = string.split(&delim).map(|x| x.to_owned()).collect();
 
@@ -489,6 +452,17 @@ enum LineType {
     Observation,
 }
 
+// fn find_keys_for_value(
+//     toml_map: toml::map::Map<std::string::String, Value>,
+//     value: Vec<String>,
+// ) -> Vec<String> {
+//     // https://stackoverflow.com/questions/32989440/how-can-i-convert-toml-rs-result-to-stdcollectionshashmap
+//     hash_map
+//         .into_iter()
+//         .filter_map(|(key, val)| if val == value { Some(key) } else { None })
+//         .collect::<Vec<String>>()
+// }
+
 fn main() {
     // when the first observation appears make the mother_row.
     //      - Look at previous btree and current line and fill in a dictionary with all needed keys.
@@ -517,7 +491,7 @@ fn main() {
     let templ = StructTemplate {
         constant_values: template.clone().template_to_constant_values(),
         group_keys: template.clone().template_to_group_keys(),
-        //group_values: template.clone().template_to_group_values(),
+        group_hashmap: template.clone().template_to_group_map(),
         obs_keys: template.clone().template_to_obs_values(),
         obs_full_replace_keys: template.clone().template_to_obs_full_replace_keys(),
         nullable: template.clone().template_to_nullable(),
@@ -612,67 +586,66 @@ fn main() {
         btree_line_data.insert(i, line_data.clone());
 
         // make a match statement that takes in the line type and appends to the appropriate vector
-        match line_data.line_type {
-            // match on a LineType. Get the last value in the vector of that type. Append to that vector.
-            //
-            LineType::Date => {
-                let last_entry = hashmap_db.get("date").unwrap().to_owned();
-                let vec_date = vec![line_data.vec_entries[1].clone()];
-                hashmap_db.insert("date".to_string(), [last_entry, vec_date].concat());
-                let non_entry: Vec<String> = table_meta
-                    .ordered_vector_of_col_names
-                    .clone()
-                    .into_iter()
-                    .filter(|x| x.to_owned() != "date".to_string())
-                    .collect::<Vec<String>>();
+        // match line_data.line_type {
+        //     // match on a LineType. Get the last value in the vector of that type. Append to that vector.
+        //     //
+        //     LineType::Date => {
+        //         let last_entry = hashmap_db.get("date").unwrap().to_owned();
+        //         let vec_date = vec![line_data.vec_entries[1].clone()];
+        //         hashmap_db.insert("date".to_string(), [last_entry, vec_date].concat());
+        //         let non_entry: Vec<String> = table_meta
+        //             .ordered_vector_of_col_names
+        //             .clone()
+        //             .into_iter()
+        //             .filter(|x| x.to_owned() != "date".to_string())
+        //             .collect::<Vec<String>>();
 
-                for i in 0..non_entry.len() {
-                    let last_entry = hashmap_db.get(&non_entry[i]).unwrap().to_owned();
-                    hashmap_db.insert(
-                        non_entry[i].clone(),
-                        [last_entry.clone(), vec!["None".to_string()]].concat(),
-                    );
-                }
-            }
-            LineType::Header => {
-                let last_entry = hashmap_db
-                    .get(&line_data.vec_entries[0])
-                    .unwrap()
-                    .to_owned();
-                let vec_header_key = line_data.vec_entries[0].clone();
-                let vec_header_value = vec![line_data.vec_entries[1].clone()];
-                hashmap_db.insert(
-                    vec_header_key.clone(),
-                    [last_entry, vec_header_value].concat(),
-                );
-                let non_entry: Vec<String> = table_meta
-                    .ordered_vector_of_col_names
-                    .clone()
-                    .into_iter()
-                    .filter(|x| x.to_owned() != vec_header_key)
-                    .collect::<Vec<String>>();
+        //         for i in 0..non_entry.len() {
+        //             let last_entry = hashmap_db.get(&non_entry[i]).unwrap().to_owned();
+        //             hashmap_db.insert(
+        //                 non_entry[i].clone(),
+        //                 [last_entry.clone(), vec!["None".to_string()]].concat(),
+        //             );
+        //         }
+        //     }
+        //     LineType::Header => {
+        //         let last_entry = hashmap_db
+        //             .get(&line_data.vec_entries[0])
+        //             .unwrap()
+        //             .to_owned();
+        //         let vec_header_key = line_data.vec_entries[0].clone();
+        //         let vec_header_value = vec![line_data.vec_entries[1].clone()];
+        //         hashmap_db.insert(
+        //             vec_header_key.clone(),
+        //             [last_entry, vec_header_value].concat(),
+        //         );
+        //         let non_entry: Vec<String> = table_meta
+        //             .ordered_vector_of_col_names
+        //             .clone()
+        //             .into_iter()
+        //             .filter(|x| x.to_owned() != vec_header_key)
+        //             .collect::<Vec<String>>();
 
-                for i in 0..non_entry.len() {
-                    let last_entry = hashmap_db.get(&non_entry[i]).unwrap().to_owned();
-                    hashmap_db.insert(
-                        non_entry[i].clone(),
-                        [last_entry.clone(), vec!["None".to_string()]].concat(),
-                    );
-                }
-            }
-            LineType::Group => {
-                // get vec entries
-                // match the value to the key
-                // put the value in the key
-                //
-                // for vec_enties get key and insert key value pair
-                let vec_ent = line_data.vec_entries;
-                for i in 0..vec_ent.len() {
-                    template.groups.unwrap().entry(&vec_ent[i])
-                }
-            }
-            LineType::Observation => {}
-        }
+        //         for i in 0..non_entry.len() {
+        //             let last_entry = hashmap_db.get(&non_entry[i]).unwrap().to_owned();
+        //             hashmap_db.insert(
+        //                 non_entry[i].clone(),
+        //                 [last_entry.clone(), vec!["None".to_string()]].concat(),
+        //             );
+        //         }
+        //     }
+        //     LineType::Group => {
+        //         // get vec entries
+        //         // match the value to the key
+        //         // put the value in the key
+        //         //
+        //         // for vec_enties get key and insert key value pair
+        //         let vec_ent = line_data.vec_entries;
+
+        //         let t = find_keys_for_value(template.groups.unwrap(), vec_ent);
+        //     }
+        //     LineType::Observation => {}
+        // }
 
         // If the line type is header then grab the column name and the entry as key and value
         // If the line type is group then grab the column name from template and the value from the data
@@ -690,6 +663,9 @@ fn main() {
     println!("btree_line_data {:?}", btree_line_data); // need to fix LineTypeGroup
 
     println!("hashmap_db {:#?}", hashmap_db);
+
+    println!("template {:#?}", template);
+
     // println!("{:#?}", btree_line_data.clone());
     //     let line_data = StructLineData {
     //         line_number: i,

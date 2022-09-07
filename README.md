@@ -1,11 +1,16 @@
+ <h1 align="center">
+    <img src="img/fwdt_logo_144.png" alt="alternate text">
+ </h1>
+
 <h1 align="center">Few Word Do Trick (fwdt)</h1>
+
+
+
 <p align="center">Few Word Do Trick (fwdt) is a cross-platform general purpose fast logger that supports templated designs</p>
 
 ---
 
- <h1 align="center">
-    <img src="img/fwdt_logo_144.png" alt="alternate text">
- </h1>
+
 
  <p align="center">
     <img src="https://media.giphy.com/media/DMNPDvtGTD9WLK2Xxa/giphy.gif" alt="alternate text">
