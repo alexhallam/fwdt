@@ -15,6 +15,7 @@ use csv;
 use regex::Regex;
 use serde::Deserialize;
 use serde_derive::Deserialize;
+use std::collections::hash_set::HashSet;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::io;
@@ -586,87 +587,88 @@ fn main() {
         btree_line_data.insert(i, line_data.clone());
 
         // make a match statement that takes in the line type and appends to the appropriate vector
-        // match line_data.line_type {
-        //     // match on a LineType. Get the last value in the vector of that type. Append to that vector.
-        //     //
-        //     LineType::Date => {
-        //         let last_entry = hashmap_db.get("date").unwrap().to_owned();
-        //         let vec_date = vec![line_data.vec_entries[1].clone()];
-        //         hashmap_db.insert("date".to_string(), [last_entry, vec_date].concat());
-        //         let non_entry: Vec<String> = table_meta
-        //             .ordered_vector_of_col_names
-        //             .clone()
-        //             .into_iter()
-        //             .filter(|x| x.to_owned() != "date".to_string())
-        //             .collect::<Vec<String>>();
+        match line_data.line_type {
+            // match on a LineType. Get the last value in the vector of that type. Append to that vector.
+            //
+            LineType::Date => {
+                let last_entry = hashmap_db.get("date").unwrap().to_owned();
+                let vec_date = vec![line_data.vec_entries[1].clone()];
+                hashmap_db.insert("date".to_string(), [last_entry, vec_date].concat());
+                let non_entry: Vec<String> = table_meta
+                    .ordered_vector_of_col_names
+                    .clone()
+                    .into_iter()
+                    .filter(|x| x.to_owned() != "date".to_string())
+                    .collect::<Vec<String>>();
 
-        //         for i in 0..non_entry.len() {
-        //             let last_entry = hashmap_db.get(&non_entry[i]).unwrap().to_owned();
-        //             hashmap_db.insert(
-        //                 non_entry[i].clone(),
-        //                 [last_entry.clone(), vec!["None".to_string()]].concat(),
-        //             );
-        //         }
-        //     }
-        //     LineType::Header => {
-        //         let last_entry = hashmap_db
-        //             .get(&line_data.vec_entries[0])
-        //             .unwrap()
-        //             .to_owned();
-        //         let vec_header_key = line_data.vec_entries[0].clone();
-        //         let vec_header_value = vec![line_data.vec_entries[1].clone()];
-        //         hashmap_db.insert(
-        //             vec_header_key.clone(),
-        //             [last_entry, vec_header_value].concat(),
-        //         );
-        //         let non_entry: Vec<String> = table_meta
-        //             .ordered_vector_of_col_names
-        //             .clone()
-        //             .into_iter()
-        //             .filter(|x| x.to_owned() != vec_header_key)
-        //             .collect::<Vec<String>>();
+                for i in 0..non_entry.len() {
+                    let last_entry = hashmap_db.get(&non_entry[i]).unwrap().to_owned();
+                    hashmap_db.insert(
+                        non_entry[i].clone(),
+                        [last_entry.clone(), vec!["None".to_string()]].concat(),
+                    );
+                }
+            }
+            LineType::Header => {
+                let last_entry = hashmap_db
+                    .get(&line_data.vec_entries[0])
+                    .unwrap()
+                    .to_owned();
+                let vec_header_key = line_data.vec_entries[0].clone();
+                let vec_header_value = vec![line_data.vec_entries[1].clone()];
+                hashmap_db.insert(
+                    vec_header_key.clone(),
+                    [last_entry, vec_header_value].concat(),
+                );
+                let non_entry: Vec<String> = table_meta
+                    .ordered_vector_of_col_names
+                    .clone()
+                    .into_iter()
+                    .filter(|x| x.to_owned() != vec_header_key)
+                    .collect::<Vec<String>>();
 
-        //         for i in 0..non_entry.len() {
-        //             let last_entry = hashmap_db.get(&non_entry[i]).unwrap().to_owned();
-        //             hashmap_db.insert(
-        //                 non_entry[i].clone(),
-        //                 [last_entry.clone(), vec!["None".to_string()]].concat(),
-        //             );
-        //         }
-        //     }
-        //     LineType::Group => {
-        //         // get vec entries
-        //         // match the value to the key
-        //         // put the value in the key
-        //         //
-        //         // for vec_enties get key and insert key value pair
-        //         let vec_ent = line_data.vec_entries;
+                for i in 0..non_entry.len() {
+                    let last_entry = hashmap_db.get(&non_entry[i]).unwrap().to_owned();
+                    hashmap_db.insert(
+                        non_entry[i].clone(),
+                        [last_entry.clone(), vec!["None".to_string()]].concat(),
+                    );
+                }
+            }
+            LineType::Group => {
+                // get vec entries
+                // match the value to the key
+                // put the value in the key
+                //
+                // for vec_enties get key and insert key value pair
+                let vec_ent = line_data.vec_entries;
+                let matched_key: Option<String> = templ
+                    .group_hashmap
+                    .clone()
+                    .unwrap()
+                    .into_iter()
+                    .find_map(|(key, val)| {
+                        if val.iter().any(|val| vec_ent.contains(val)) {
+                            Some(key)
+                        } else {
+                            None
+                        }
+                    });
 
-        //         let t = find_keys_for_value(template.groups.unwrap(), vec_ent);
-        //     }
-        //     LineType::Observation => {}
-        // }
+                dbg!(vec_ent);
+                dbg!(matched_key.unwrap());
+            }
+            LineType::Observation => {}
+        }
 
         // If the line type is header then grab the column name and the entry as key and value
         // If the line type is group then grab the column name from template and the value from the data
         // If the line type is date then use the 'date'
         // if the line type is an observation then use the observation set of columns
 
-        // println!("{:#?}", line_data.clone());
         i += 1
     }
     let cols = table_meta.clone().ordered_vector_of_col_names;
-    println!("cols {:?}", cols);
-
-    // println!("btree_numbered_file {:#?}", btree_numbered_file);
-    // println!("templ {:#?}", templ); // need to fix group values
-    println!("btree_line_data {:?}", btree_line_data); // need to fix LineTypeGroup
-
-    println!("hashmap_db {:#?}", hashmap_db);
-
-    println!("template {:#?}", template);
-
-    // println!("{:#?}", btree_line_data.clone());
     //     let line_data = StructLineData {
     //         line_number: i,
     //         string: line_string.as_str().to_owned(),
@@ -676,8 +678,6 @@ fn main() {
     //         is_maximized: data_and_config.is_maximized(),
     //     };
     //     if debug {
-    //         // println!("{:?}", line.as_ref().unwrap().to_owned());
-    //         println!("Line Data {:#?}", line_data.clone());
     //     }
     //     numbered_file.insert(i, line_data.clone());
 
@@ -720,8 +720,6 @@ fn main() {
 
     //     btree_df.insert(i, btree_data_row.clone());
     //     if debug {
-    //         println!("btree_data_row: {:?}", btree_data_row.clone());
-    //         //println!("btree_df: {:?}", btree_df.clone());
     //     }
 
     //     i += 1;
@@ -780,7 +778,6 @@ fn main() {
     // let all_column_names_ordered =
     //     get_all_column_names_ordered(constant_keys_owned, group_keys_owned, obs_keys, true);
 
-    // //println!("all_column_names_ordered: {:?}", all_column_names_ordered);
     // let col_names: Vec<&String> = btree_data_row.keys().collect();
 
     // wtr.write_record(all_column_names_ordered.clone());
@@ -793,10 +790,6 @@ fn main() {
     //     mapping_btree.insert(key, i);
     // }
 
-    // // println!("mapping_btree {:?}", mapping_btree);
-    // // println!("mapping_btree values {:?}", mapping_btree.values());
-    // // println!("btree_df_values: {:?}", btree_df_values);
-
     // let mut mapping_btree_values: Vec<&usize> = mapping_btree.values().into_iter().collect();
     // let range = seq(mapping_btree_values.len());
     // let mut index_btree: BTreeMap<&usize, usize> = BTreeMap::new();
@@ -804,29 +797,18 @@ fn main() {
     //     index_btree.insert(mapping_btree_values[i], range[i]);
     // }
 
-    // //println!("index_btree: {:?}", index_btree);
-
     // for i in 0..btree_df_values.len() {
     //     //wtr.write_record(btree_df_values.get(&i).unwrap());
     //     let rowwise_values_unordered = btree_df_values[&i]
     //         .clone()
     //         .into_iter()
     //         .collect::<Vec<&String>>();
-    //     //println!("rowwise_values_unordered {:?}", rowwise_values_unordered);
 
     //     let mut rowwise_values_ordered: Vec<&String> = Vec::new();
     //     for j in 0..rowwise_values_unordered.len() {
     //         let order_idx = index_btree.clone().get(&j).unwrap().to_owned();
     //         rowwise_values_ordered.push(rowwise_values_unordered[order_idx])
     //     }
-    //     //println!("rowwise_values_ordered {:?}", rowwise_values_ordered);
     //     wtr.write_record(rowwise_values_ordered);
     // }
-
-    // // if debug {
-    // //     println!("{}", "--------------------debug--------------------");
-    // //     println!("btree_df_values: {:#?}", btree_df_values.clone());
-    // //     println!("btree_data_row: {:#?}", btree_data_row.clone().keys());
-    // //     println!("{}", "--------------------debug--------------------");
-    // // }
 }
