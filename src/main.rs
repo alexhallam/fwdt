@@ -368,6 +368,7 @@ fn is_group_line(
     template: StructTemplate,
     raw_template: StructTemplateDeserializer,
 ) -> bool {
+    // fix is group line to not be hard coded
     let group_keys = template.group_keys.clone().unwrap();
     let mut raw_template_groups = raw_template.groups.unwrap();
 
@@ -520,8 +521,6 @@ fn main() {
         );
     }
 
-    println!("hashmap_db {:?}", hashmap_db);
-
     // let mut btree_data_row: BTreeMap<String, String> = BTreeMap::new();
     // let mut btree_df: BTreeMap<usize, BTreeMap<String, String>> = BTreeMap::new();
 
@@ -642,21 +641,61 @@ fn main() {
                 //
                 // for vec_enties get key and insert key value pair
                 let vec_ent = line_data.vec_entries;
-                let matched_key: Option<String> = templ
-                    .group_hashmap
-                    .clone()
-                    .unwrap()
-                    .into_iter()
-                    .find_map(|(key, val)| {
-                        if val.iter().any(|val| vec_ent.contains(val)) {
-                            Some(key)
-                        } else {
-                            None
-                        }
-                    });
+                let vec_keys = templ.clone().group_keys.unwrap();
 
-                dbg!(vec_ent);
-                dbg!(matched_key.unwrap());
+                for i in 0..vec_keys.len() {
+                    let vec_string_hash_values: Vec<String> = templ
+                        .group_hashmap
+                        .clone()
+                        .unwrap()
+                        .get(&vec_keys[i])
+                        .unwrap()
+                        .to_owned();
+
+                    let last_entry = hashmap_db
+                        .get(&vec_keys[i])
+                        .unwrap()
+                        .to_owned()
+                        .last()
+                        .unwrap()
+                        .to_owned();
+
+                    // hashsets needed for `is_disjoint()` method
+                    let mut vec_string_hash_values_hashset: HashSet<String> =
+                        vec_string_hash_values.into_iter().collect();
+                    let mut vec_ent_hashset: HashSet<String> =
+                        vec_ent.clone().into_iter().collect();
+                    // if the hashsets are disjoint (they do not contain any of the same values) then drag down the most recent value
+                    // if is_disjoint is false (they do contains same values) then update the value in this group key
+                    if vec_string_hash_values_hashset.is_disjoint(&vec_ent_hashset) {
+                        // no match case
+                        hashmap_db.insert(vec_keys[i].clone(), vec![last_entry]);
+                    } else {
+                        // match case
+                        hashmap_db.insert(vec_keys[i].clone(), vec![vec_keys[i].clone()]);
+                    }
+                }
+                // let matched_key: Option<String> = templ
+                //     .group_hashmap
+                //     .clone()
+                //     .unwrap()
+                //     .into_iter()
+                //     .find_map(|(key, val)| {
+                //         if val.iter().any(|val| vec_ent.contains(val)) {
+                //             Some(key)
+                //         } else {
+                //             None
+                //         }
+                //     });
+
+                // let matches = vec_string // cartisian product
+                // .clone()
+                // .into_iter()
+                // .flat_map(|x| std::iter::repeat(x).zip(group_values.clone()))
+                // .filter(|(a, b)| a == b)
+                // .collect::<Vec<_>>();
+
+                // dbg!(vec_ent);
             }
             LineType::Observation => {}
         }
@@ -668,6 +707,8 @@ fn main() {
 
         i += 1
     }
+    println!("hashmap_db {:?}", hashmap_db);
+
     let cols = table_meta.clone().ordered_vector_of_col_names;
     //     let line_data = StructLineData {
     //         line_number: i,
