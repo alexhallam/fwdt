@@ -2,7 +2,7 @@
 #![allow(unused_variables)]
 // auto rerun
 // cargo install cargo-watch
-// cargo run test/data/ham_log/data.txt test/data/ham_log/template.toml
+// cargo watch -x 'run -- test/data/ham_log/data.txt test/data/ham_log/template.toml'
 use std::fs::read_to_string;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -602,10 +602,7 @@ fn main() {
 
                 for i in 0..non_entry.len() {
                     let last_entry = hashmap_db.get(&non_entry[i]).unwrap().to_owned();
-                    hashmap_db.insert(
-                        non_entry[i].clone(),
-                        [last_entry.clone(), vec!["None".to_string()]].concat(),
-                    );
+                    hashmap_db.insert(non_entry[i].clone(), last_entry.clone());
                 }
             }
             LineType::Header => {
@@ -628,10 +625,7 @@ fn main() {
 
                 for i in 0..non_entry.len() {
                     let last_entry = hashmap_db.get(&non_entry[i]).unwrap().to_owned();
-                    hashmap_db.insert(
-                        non_entry[i].clone(),
-                        [last_entry.clone(), vec!["None".to_string()]].concat(),
-                    );
+                    hashmap_db.insert(non_entry[i].clone(), last_entry.clone());
                 }
             }
             LineType::Group => {
@@ -642,6 +636,7 @@ fn main() {
                 // for vec_enties get key and insert key value pair
                 let vec_ent = line_data.vec_entries;
                 let vec_keys = templ.clone().group_keys.unwrap();
+                dbg!(vec_ent.clone());
 
                 for i in 0..vec_keys.len() {
                     let vec_string_hash_values: Vec<String> = templ
@@ -652,27 +647,28 @@ fn main() {
                         .unwrap()
                         .to_owned();
 
-                    let last_entry = hashmap_db
-                        .get(&vec_keys[i])
-                        .unwrap()
-                        .to_owned()
-                        .last()
-                        .unwrap()
-                        .to_owned();
+                    // let last_entry = hashmap_db
+                    //     .get(&vec_keys[i])
+                    //     .unwrap()
+                    //     .to_owned()
+                    //     .last()
+                    //     .unwrap() // unwrap failes if no previous entry
+                    //     .to_owned();
 
                     // hashsets needed for `is_disjoint()` method
-                    let mut vec_string_hash_values_hashset: HashSet<String> =
+                    let vec_string_hash_values_hashset: HashSet<String> =
                         vec_string_hash_values.into_iter().collect();
-                    let mut vec_ent_hashset: HashSet<String> =
-                        vec_ent.clone().into_iter().collect();
+                    let vec_ent_hashset: HashSet<String> = vec_ent.clone().into_iter().collect();
+
                     // if the hashsets are disjoint (they do not contain any of the same values) then drag down the most recent value
                     // if is_disjoint is false (they do contains same values) then update the value in this group key
                     if vec_string_hash_values_hashset.is_disjoint(&vec_ent_hashset) {
                         // no match case
-                        hashmap_db.insert(vec_keys[i].clone(), vec![last_entry]);
+                        // hashmap_db.insert(vec_keys[i].clone(), vec![last_entry]);
+                        hashmap_db.insert(vec_keys[i].clone(), vec!["None".to_string()]);
                     } else {
                         // match case
-                        hashmap_db.insert(vec_keys[i].clone(), vec![vec_keys[i].clone()]);
+                        hashmap_db.insert(vec_keys[i].clone(), vec![vec_ent[i].clone()]);
                     }
                 }
                 // let matched_key: Option<String> = templ
