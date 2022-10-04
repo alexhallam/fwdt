@@ -45,7 +45,7 @@ fn main() {
     // read data file
     let fp: File = File::open(Path::new(&opt.file.unwrap().as_path())).unwrap();
     let file: BufReader<&File> = BufReader::new(&fp);
-    let mut hashmap_db: HashMap<String, String> = HashMap::new();
+    let mut BTreeMap_db: BTreeMap<String, String> = BTreeMap::new();
     let lines = file
         .lines()
         .map(|x| x.expect("csv line expected"))
@@ -63,15 +63,15 @@ fn main() {
         .map(|x| x.trim().to_owned())
         .collect::<Vec<String>>();
     // Dictionary comprehension: mother_line = {names[i]: first_line[i] for i in range(len(names))}
-    let mother_line: HashMap<String, String> = (0..names.len())
+    let mother_line: BTreeMap<String, String> = (0..names.len())
         .map(|i| (names[i].clone(), first_line[i].clone()))
-        .collect::<HashMap<_, _>>();
-    let mut list_dicts: Vec<HashMap<String, String>> = Vec::new();
+        .collect::<BTreeMap<_, _>>();
+    let mut list_dicts: Vec<BTreeMap<String, String>> = Vec::new();
     list_dicts.push(mother_line);
     // slicing: remainder_lines = lines[2::]. Do not need header and first line for remainder iterations.
     let remainder_line: Vec<String> = lines.as_slice()[2..].to_vec();
     for i in 0..remainder_line.len() {
-        let mut previous_line: HashMap<String, String> = list_dicts[i].clone();
+        let mut previous_line: BTreeMap<String, String> = list_dicts[i].clone();
         let current_line: Vec<String> = remainder_line[i]
             .split(delim)
             .map(|x| x.trim().to_owned())
@@ -87,8 +87,6 @@ fn main() {
         list_dicts.push(previous_line)
     }
 
-    //dbg!(list_dicts);
-
     let vec_vec: Vec<Vec<String>> = list_dicts
         .clone()
         .into_iter()
@@ -102,6 +100,7 @@ fn main() {
     for i in 0..vec_vec.len() {
         wtr.write_record(vec_vec[i].clone());
     }
+    dbg!(list_dicts);
 
     //dbg!(vec_vec);
 }
