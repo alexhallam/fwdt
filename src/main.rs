@@ -100,7 +100,7 @@ fn main() {
     for i in 0..vec_vec.len() {
         wtr.write_record(vec_vec[i].clone());
     }
-    dbg!(list_dicts);
+    //dbg!(list_dicts);
 
     //dbg!(vec_vec);
 }
