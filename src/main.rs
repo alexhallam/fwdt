@@ -45,12 +45,12 @@ fn main() {
     // read data file
     let fp: File = File::open(Path::new(&opt.file.unwrap().as_path())).unwrap();
     let file: BufReader<&File> = BufReader::new(&fp);
-    let mut BTreeMap_db: BTreeMap<String, String> = BTreeMap::new();
+    let mut HashMap_db: BTreeMap<String, String> = BTreeMap::new();
     let lines = file
         .lines()
         .map(|x| x.expect("csv line expected"))
         .collect::<Vec<String>>();
-    let delim = ",";
+    let delim = " ";
     //names = [item.strip() for item in lines[0].split(delim)]
     let names: Vec<String> = lines[0]
         .split(delim)
