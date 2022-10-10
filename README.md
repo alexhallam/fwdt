@@ -1,4 +1,11 @@
+ <h1 align="center">
+    <img src="img/fwdt_logo_144.png" alt="alternate text">
+ </h1>
+
 <h1 align="center">Few Word Do Trick (fwdt)</h1>
+
+
+
 <p align="center">Few Word Do Trick (fwdt) is a cross-platform general purpose fast logger that supports templated designs</p>
 
 
@@ -6,114 +13,95 @@
     <img src="https://media.giphy.com/media/DMNPDvtGTD9WLK2Xxa/giphy.gif" alt="alternate text">
  </p>
 
-```txt
-> cat test/data/ham_log/data.txt 
-mycall wq8R
-operator wq8R
+---
+<h2 align="center">Two Laws Of Human Data Entry</h2>
+<h3 align="center"><strong>First Law: </strong>To prevent data entry errors, never enter data.</h3>
+<h3 align="center"><strong>Second Law: </strong>When First Law is not possible only enter changes.</h3>
+
+--- 
+
+ <h1 align="center">
+    <img src="img/fwdt_example.jpg" alt="alternate text">
+ </h1>
 
 
-# this is a comment
-date 2022-08-08
-40m cw
-2307 qr3e 7.2230 599 599
-11 kf1rx 7.0560 
-13 kn6h
-7 ae0bc
-20m cw
-2307 qr3e 14.2230 599 599
-11 kf1rx 14.0560 
-13 kn6h
-7 ae0bc
-date 2022-08-10
-40m cw
-2307 qr3e 7.2230 599 599
-11 kf1rx 7.0560 
-13 kn6h
-7 ae0bc
-```
+## Personal Anecdote
 
-```txt
-> ./target/debug/fwdt test/data/ham_log/data.txt test/data/ham_log/template.toml | tv -g 5
+Data entry by humans is error prone. I know this from first hand experience. I had a job for a couple years which required exact data entry. Even after filling the same fields for years I found that I still made data errors from time to time. Though I do not have the evidence in front of me I assume that the average human can't generate flawless entries especially as the number of those entries increase to larger numbers.
 
-        tv dim: 8 x 9
-        call  date       freq    group mycall operator received sent time 
-     1  qr3e  2022-08-08  7.2230 cw    wq8R   wq8R     599      599  2307 
-     2  kn6h  2022-08-08  7.2230 cw    wq8R   wq8R     599      599  13   
-     3  ae0bc 2022-08-08  7.2230 cw    wq8R   wq8R     599      599  7    
-     4  ae0bc 2022-08-08  7.2230 cw    wq8R   wq8R     599      599  7    
-     5  qr3e  2022-08-08 14.223  cw    wq8R   wq8R     599      599  2307 
-     6  kn6h  2022-08-08 14.223  cw    wq8R   wq8R     599      599  13   
-     7  ae0bc 2022-08-08 14.223  cw    wq8R   wq8R     599      599  7    
-     8  ae0bc 2022-08-10 14.223  cw    wq8R   wq8R     599      599  7    
+Recently I stumbled across a ham radio data logger [fle](https://df3cb.com/fle/). It is a domain specific language (DSL) which allows data entry with minimal repetition. This command line utility is similar in spirit, but does not invent its own DSL. It uses incomplete csv files as the data input and outputs complete csv files.
+
+## Example
+
+Assume a user has the final dataset in mind. Using `wc -m` The character count is `453`.
 
 ```
-
-# things to say
-
-What makes a good fast logger.
-
-The thing that makes manual logging slow is, in part, proportional to the number of characters that must be entered. If a logger can generate the correct final output without needing as many characters then it accomplished its task.
-
-In the above example there result desired has 440 characters. The input required was 279 (excluding the template text). This saves 161 charcters! 
-
-```
-> cat test/data/ham_log/data.txt | wc -m
-279
-> ./target/debug/fwdt test/data/ham_log/data.txt test/data/ham_log/template.toml | wc -m
-440
+        date       group mycall operator received sent freq    time call   
+     1  2022-08-08 cw    wq8R   wq8R     599      599   7.2230 1107 qr3e   
+     2  2022-08-08 cw    wq8R   wq8R     599      599   7.2230 1113 kn6h   
+     3  2022-08-08 cw    wq8R   wq8R     599      599   7.2230 1127 ae0bc  
+     4  2022-08-08 cw    wq8R   wq8R     599      599   7.2230 1207 ae4bc  
+     5  2022-08-08 cw    wq8R   wq8R     599      599  14.223  1207 qr3e   
+     6  2022-08-08 cw    wq8R   wq8R     599      599  14.223  1213 kn6h   
+     7  2022-08-08 cw    wq8R   wq8R     599      599  14.223  1217 a2rat  
+     8  2022-08-08 cw    wq8R   wq8R     599      599  14.223  1217 ko7rqq
 ```
 
-# tufte of text
-
-When tufte came up with his design of a boxplot he got there by erasing the unnecesary parts of the box plot. In a similar fashion `fwdt` may be thought of as erasing unnessary text.
-
-![th](img/boxplot.png)
-
-Here is an example of removing the unneccesary.
+If a user erases the repetitive data the character count may be reduced to `187`.
+The only data the user must enter is shown below. I will refer to these incomplete
+csv files as <em>fast logged</em> (fl) files. 
 
 ```
-        call  date       freq    group mycall operator received sent time 
-        qr3e  2022-08-08  7.2230 cw    wq8R   wq8R     599      599  2307 
-        kn6h  2022-08-08  7.2230 cw    wq8R   wq8R     599      599  2313   
-        ae0bc 2022-08-08  7.2230 cw    wq8R   wq8R     599      599  2317    
-        ae0bc 2022-08-08  7.2230 cw    wq8R   wq8R     599      599  2317    
-        qr3e  2022-08-08 14.223  cw    wq8R   wq8R     599      599  2307 
-        kn6h  2022-08-08 14.223  cw    wq8R   wq8R     599      599  2313   
-        ae0bc 2022-08-08 14.223  cw    wq8R   wq8R     599      599  2317    
-        ae0bc 2022-08-10 14.223  cw    wq8R   wq8R     599      599  2317  
+date,group,mycall,operator,received,sent,freq,time,call 
+2022-08-08,cw,wq8R,wq8R,599,599,7.2230,1107,qr3e
+1113,kn6h
+1127,ae0bc
+1207,ae4bc
+14.223,1207,qr3e
+1213,kn6h
+1217,a8rat
+1217,ko7rqq
 ```
 
+If this were mapped to the original formatting it would be easier to see what was erased. 
+
 ```
-        call  date        freq    group mycall operator received sent time 
-        qr3e  2022-08-08  7.2230  cw    wq8R   wq8R     599      599  2307 
-        kn6h                                                           13   
-        ae0bc                                                           7    
-        ae0bc                                                           7    
-        qr3e              14.223                                      2307 
-        kn6h                                                            13   
-        ae0bc                                                            7    
-        ae0bc                                                            7  
+        date       group mycall operator received sent freq  time call   
+     1  2022-08-08 cw    wq8R   wq8R     599      599   7.22 1107 qr3e   
+     2  NA         NA    NA     NA       NA       NA   NA    1113 kn6h   
+     3  NA         NA    NA     NA       NA       NA   NA    1127 ae0bc  
+     4  NA         NA    NA     NA       NA       NA   NA    1207 ae4bc  
+     5  NA         NA    NA     NA       NA       NA   14.2  1207 qr3e   
+     6  NA         NA    NA     NA       NA       NA   NA    1213 kn6h   
+     7  NA         NA    NA     NA       NA       NA   NA    1217 a8rat  
+     8  NA         NA    NA     NA       NA       NA   NA    1217 ko7rqq
 ```
 
-The above is rearranged into a tree-like structure.
+## Usage
 
-# Line Entry Types
+The command used to go from a fl file to a csv file, which is comma separated, is:
 
-`header`: The header represents constants that a pulled down through the final csv. In the above example `mycall` is a header.
-
-`group`: A group is like a header, but is replaced on enter
-
-`observation`: Using tidy data principles, each row is an observation. In `fwdt` observations are the entries
-that should be allowed to change from line to line. `call` and `time` are observations. `receiceved` and `sent` and `frequency` are also observations, but did not need to be changed often. Another property of observations is that they have the option of completly replacement or partial replacement. The `time` column is a good example of this. The first row shows `2307` the second row is `13` which is filled to `2313`. This is a 
-*right-to-left* replacement.
-
-# install
-```sh
-git clone <this>
-cd fwdt
-cargo build
 ```
-# example
-```sh
-./target/debug/fwdt test/data/ham_log/data.txt test/data/ham_log/template.toml 
+fwdt -s, test/data/radio_log_small.csv
 ```
+The output is 
+
+```
+date,group,mycall,operator,received,sent,freq,time,call
+2022-08-08,cw,wq8R,wq8R,599,599,7.2230,1107,qr3e
+2022-08-08,cw,wq8R,wq8R,599,599,7.2230,1113,kn6h
+2022-08-08,cw,wq8R,wq8R,599,599,7.2230,1127,ae0bc
+2022-08-08,cw,wq8R,wq8R,599,599,7.2230,1207,ae4bc
+2022-08-08,cw,wq8R,wq8R,599,599,14.223,1207,qr3e
+2022-08-08,cw,wq8R,wq8R,599,599,14.223,1213,kn6h
+2022-08-08,cw,wq8R,wq8R,599,599,14.223,1217,a8rat
+2022-08-08,cw,wq8R,wq8R,599,599,14.223,1217,ko7rqq
+```
+
+## Install
+
+```
+cargo install fwdt
+```
+
+## Help
