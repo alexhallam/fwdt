@@ -6,7 +6,7 @@
 
 
 
-<p align="center">Few Word Do Trick (fwdt) is a cross-platform general purpose fast logger that supports templated designs</p>
+<p align="center">Few Word Do Trick (fwdt) is a cross-platform general purpose fast logger for humans that supports incomplete csvs for a better data entry experience.</p>
 
 
  <p align="center">
