@@ -1,7 +1,7 @@
 [package]
 authors = ["alexhallam <alexhallam6.28@gmail.com>"]
 categories = ["command-line-utilities"]
-description = "Very High Scorch. The fastest and least error prone way to do data entry."
+description = "Few Word Do Trick (fwdt) is a fast data logger Very High Scorch. The fastest and least error prone way to do data entry."
 license = "Unlicense/MIT"
 readme = "README.md"
 repository = "https://github.com/alexhallam/fwdt"
@@ -15,5 +15,3 @@ edition = "2021"
 regex = "1.6.0"
 csv = "1.1.6"
 structopt = "0.3.26"
-serde_derive = "1.0.143"
-serde = "1.0.143"

@@ -15,9 +15,9 @@ use structopt::StructOpt;
 #[derive(StructOpt)]
 #[structopt(
     name = "fwdt",
-    about = "📝🔥 Few Word Do Trick (fwdt) is a fast logger for manual data entry that supports templates. 📝🔥\n
+    about = "📝🔥 Few Word Do Trick (fwdt) is a fast data logger 📝🔥\n
     Example Usage:
-    fwdt data.csv
+    fwdt -s, data.csv
 "
 )]
 struct Cli {
