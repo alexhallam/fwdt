@@ -15,3 +15,28 @@ edition = "2021"
 regex = "1.6.0"
 csv = "1.1.6"
 structopt = "0.3.26"
+
+[package.metadata.deb]
+assets = [
+  [
+    "target/release/fwdt",
+    "usr/bin/",
+    "755",
+  ],
+  [
+    "README.md",
+    "usr/share/doc/cargo-deb/README",
+    "644",
+  ],
+]
+depends = "$auto"
+extended-description = """\
+Few Word Do Trick (fwdt) is a fast data logger Very High Scorch. The fastest and least error prone way to do data entry.
+"""
+license-file = ["UNLICENSE", "0"]
+maintainer = "Alex Hallam <alexhallam6.28@gmail.com>"
+priority = "optional"
+section = "utility"
+
+# cross-rs
+[package.metadata.cross.target.aarch64-unknown-linux-gnu]
