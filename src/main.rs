@@ -3,6 +3,7 @@
 // auto rerun
 // cargo install cargo-watch
 // cargo watch -x 'run -- test/data/ham_log/data.txt test/data/ham_log/template.toml'
+// cargo watch -x 'run -- test/data/power_lift.csv'
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -10,7 +11,6 @@ use std::path::PathBuf;
 
 use csv;
 use regex::Regex;
-use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::io;
 
@@ -45,7 +45,7 @@ fn main() {
     // read data file
     let fp: File = File::open(Path::new(&opt.file.unwrap().as_path())).unwrap();
     let file: BufReader<&File> = BufReader::new(&fp);
-    let mut HashMap_db: BTreeMap<String, String> = BTreeMap::new();
+    //let HashMap_db: HashMap<String, String> = HashMap::new();
     let lines = file
         .lines()
         .map(|x| x.expect("csv line expected"))
@@ -63,15 +63,15 @@ fn main() {
         .map(|x| x.trim().to_owned())
         .collect::<Vec<String>>();
     // Dictionary comprehension: mother_line = {names[i]: first_line[i] for i in range(len(names))}
-    let mother_line: BTreeMap<String, String> = (0..names.len())
+    let mother_line: HashMap<String, String> = (0..names.len())
         .map(|i| (names[i].clone(), first_line[i].clone()))
-        .collect::<BTreeMap<_, _>>();
-    let mut list_dicts: Vec<BTreeMap<String, String>> = Vec::new();
+        .collect::<HashMap<_, _>>();
+    let mut list_dicts: Vec<HashMap<String, String>> = Vec::new();
     list_dicts.push(mother_line);
     // slicing: remainder_lines = lines[2::]. Do not need header and first line for remainder iterations.
     let remainder_line: Vec<String> = lines.as_slice()[2..].to_vec();
     for i in 0..remainder_line.len() {
-        let mut previous_line: BTreeMap<String, String> = list_dicts[i].clone();
+        let mut previous_line: HashMap<String, String> = list_dicts[i].clone();
         let current_line: Vec<String> = remainder_line[i]
             .split(delim)
             .map(|x| x.trim().to_owned())
@@ -87,10 +87,22 @@ fn main() {
         list_dicts.push(previous_line)
     }
 
+    // let vec_vec: Vec<Vec<String>> = list_dicts
+    //     .clone()
+    //     .into_iter()
+    //     .map(|x| x.values().cloned().collect::<Vec<String>>())
+    //     .collect();
+
+    let keys = names.clone();
+    // get the keys in the proper order
     let vec_vec: Vec<Vec<String>> = list_dicts
         .clone()
         .into_iter()
-        .map(|x| x.values().cloned().collect::<Vec<String>>())
+        .map(|x| {
+            keys.iter()
+                .filter_map(|key| x.get(key).cloned())
+                .collect::<Vec<String>>()
+        })
         .collect();
 
     let mut wtr = csv::Writer::from_writer(io::stdout());
@@ -100,7 +112,8 @@ fn main() {
     for i in 0..vec_vec.len() {
         wtr.write_record(vec_vec[i].clone());
     }
-    //dbg!(list_dicts);
+    // list dicts is in the wrong order
+    dbg!(list_dicts);
 
     //dbg!(vec_vec);
 }
