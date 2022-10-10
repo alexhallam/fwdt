@@ -47,7 +47,7 @@ Assume a user has the final dataset in mind. Using `wc -m` The character count i
      8  2022-08-08 cw    wq8R   wq8R     599      599  14.223  1217 ko7rqq
 ```
 
-If a user erases the repetitive data the character count may be reduced to `187`.
+If a user erases the repetitive data, the character count may be reduced to `187`.
 The only data the user must enter is shown below. I will refer to these incomplete
 csv files as <em>fast logged</em> (fl) files. 
 
