@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
 // auto rerun with
 // cargo install cargo-watch
 // cargo watch -x 'run -- -s, test/data/radio_log_small.csv'
@@ -9,7 +7,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use csv;
-use regex::Regex;
+//use regex::Regex;
 use std::collections::HashMap;
 use std::io;
 use std::str;
@@ -59,13 +57,13 @@ fn main() {
     //      - Look at previous hashmap and current line and fill in a dictionary with all needed keys.
     // use template meta data to get the number of columns needed
     // use the meta data to get the ordering of the columns
-    let debug: bool = true;
     let opt = Cli::from_args();
+    let debug_mode = opt.debug_mode;
     // Regex helpers
-    let regex_line_comment = Regex::new("^[[:blank:]]*#").unwrap();
-    let regex_trailing_white_space = Regex::new(r#"[ \t]+$"#).unwrap();
-    let regex_blank_line = Regex::new(r#"^\s*$"#).unwrap();
-    let regex_null_line = Regex::new(r#"(<.*?>)"#).unwrap();
+    // let regex_line_comment = Regex::new("^[[:blank:]]*#").unwrap();
+    // let regex_trailing_white_space = Regex::new(r#"[ \t]+$"#).unwrap();
+    // let regex_blank_line = Regex::new(r#"^\s*$"#).unwrap();
+    // let regex_null_line = Regex::new(r#"(<.*?>)"#).unwrap();
     // read data file
     let fp: File = File::open(Path::new(&opt.file.unwrap().as_path())).unwrap();
     let binding = [opt.delimiter.unwrap()];
@@ -89,7 +87,7 @@ fn main() {
         .split(delim)
         .map(|x| x.trim().to_owned())
         .collect::<Vec<String>>();
-    let debug_mode = opt.debug_mode;
+
     if debug_mode {
         dbg!(first_line.clone());
     }
@@ -131,16 +129,18 @@ fn main() {
         .collect();
 
     let mut wtr = csv::Writer::from_writer(io::stdout());
-    vec_vec.clone().iter().map(|x| wtr.write_record(x));
 
-    wtr.write_record(names);
-    for i in 0..vec_vec.len() {
-        wtr.write_record(vec_vec[i].clone());
-    }
+    wtr.write_record(names)
+        .expect("Expected a list of names for column header");
+    vec_vec
+        .clone()
+        .iter()
+        .for_each(|x| wtr.write_record(x).expect("Expected valid list of entries"));
     // list dicts is in the wrong order
     if debug_mode {
         dbg!(list_dicts);
     }
-
-    //dbg!(vec_vec);
+    if debug_mode {
+        dbg!(vec_vec);
+    }
 }
