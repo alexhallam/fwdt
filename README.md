@@ -27,7 +27,7 @@
 
 ## Personal Anecdote
 
-Data entry by humans is error prone. I know this from first hand experience. I had a job for a couple years which required exact data entry. Even after filling the same fields for years I found that I still made data errors from time to time. Though I do not have the evidence in front of me I assume that the average human can't generate flawless entries especially as the number of those entries increase to larger numbers.
+Data entry by humans is error prone. I know this from first hand experience. Though I do not have the evidence in front of me I assume that the average person can't generate flawless entries especially as the number of those entries increase to larger numbers.
 
 Recently I stumbled across a ham radio data logger [fle](https://df3cb.com/fle/). It is a domain specific language (DSL) which allows data entry with minimal repetition. This command line utility is similar in spirit, but does not invent its own DSL. It uses incomplete csv files as the data input and outputs complete csv files.
 
