@@ -1,9 +1,8 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
-// auto rerun
+// auto rerun with
 // cargo install cargo-watch
-// cargo watch -x 'run -- test/data/ham_log/data.txt test/data/ham_log/template.toml'
-// cargo watch -x 'run -- test/data/power_lift.csv'
+// cargo watch -x 'run -- -s, test/data/radio_log_small.csv'
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -13,7 +12,7 @@ use csv;
 use regex::Regex;
 use std::collections::HashMap;
 use std::io;
-
+use std::str;
 use structopt::StructOpt;
 #[derive(StructOpt)]
 #[structopt(
@@ -26,13 +25,38 @@ use structopt::StructOpt;
 struct Cli {
     #[structopt(name = "FILE", parse(from_os_str), help = "Data file to process")]
     file: Option<PathBuf>,
+    #[structopt(
+        short = "s",
+        long = "delimiter",
+        parse(try_from_str = parse_delimiter),
+        help = "The delimiter separating the columns. Example #1 `fwdt -s ' '  test/data/power_lift.csv`. Example #2 `fwdt -s, test/data/radio_log_small.csv`"
+    )]
+    delimiter: Option<u8>,
+    #[structopt(
+        short = "d",
+        long = "debug-mode",
+        help = "Print object details to make it easier for the maintainer to find and resolve bugs."
+    )]
+    debug_mode: bool,
 }
 
 //
+pub fn parse_delimiter(src: &str) -> Result<u8, String> {
+    let bytes = src.as_bytes();
+    match *bytes {
+        [del] => Ok(del),
+        [b'\\', b't'] => Ok(b'\t'),
+        _ => Err(format!(
+            "expected one byte as delimiter, got {} bytes (\"{}\")",
+            bytes.len(),
+            src
+        )),
+    }
+}
 
 fn main() {
     // when the first observation appears make the mother_row.
-    //      - Look at previous btree and current line and fill in a dictionary with all needed keys.
+    //      - Look at previous hashmap and current line and fill in a dictionary with all needed keys.
     // use template meta data to get the number of columns needed
     // use the meta data to get the ordering of the columns
     let debug: bool = true;
@@ -44,13 +68,16 @@ fn main() {
     let regex_null_line = Regex::new(r#"(<.*?>)"#).unwrap();
     // read data file
     let fp: File = File::open(Path::new(&opt.file.unwrap().as_path())).unwrap();
+    let binding = [opt.delimiter.unwrap()];
+    let delim = match str::from_utf8(&binding) {
+        Ok(v) => v.clone(),
+        Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+    };
     let file: BufReader<&File> = BufReader::new(&fp);
-    //let HashMap_db: HashMap<String, String> = HashMap::new();
     let lines = file
         .lines()
         .map(|x| x.expect("csv line expected"))
         .collect::<Vec<String>>();
-    let delim = " ";
     //names = [item.strip() for item in lines[0].split(delim)]
     let names: Vec<String> = lines[0]
         .split(delim)
@@ -62,6 +89,10 @@ fn main() {
         .split(delim)
         .map(|x| x.trim().to_owned())
         .collect::<Vec<String>>();
+    let debug_mode = opt.debug_mode;
+    if debug_mode {
+        dbg!(first_line.clone());
+    }
     // Dictionary comprehension: mother_line = {names[i]: first_line[i] for i in range(len(names))}
     let mother_line: HashMap<String, String> = (0..names.len())
         .map(|i| (names[i].clone(), first_line[i].clone()))
@@ -87,12 +118,6 @@ fn main() {
         list_dicts.push(previous_line)
     }
 
-    // let vec_vec: Vec<Vec<String>> = list_dicts
-    //     .clone()
-    //     .into_iter()
-    //     .map(|x| x.values().cloned().collect::<Vec<String>>())
-    //     .collect();
-
     let keys = names.clone();
     // get the keys in the proper order
     let vec_vec: Vec<Vec<String>> = list_dicts
@@ -113,7 +138,9 @@ fn main() {
         wtr.write_record(vec_vec[i].clone());
     }
     // list dicts is in the wrong order
-    dbg!(list_dicts);
+    if debug_mode {
+        dbg!(list_dicts);
+    }
 
     //dbg!(vec_vec);
 }
