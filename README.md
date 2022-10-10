@@ -102,7 +102,7 @@ date,group,mycall,operator,received,sent,freq,time,call
 
 The rules are very simple.
 
-1. The first two lines (column headers and the first line of data) must be complete.
+1. The first two lines (column headers and the first line of data) must be complete. The first line of data is the "mother line". This is the base for future recursive data imputation when data is not present.
 2. All subsequent lines are replaced by the right most column. (Put columns that change the most frequently to the right).
 
 
