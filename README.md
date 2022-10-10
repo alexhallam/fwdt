@@ -77,11 +77,14 @@ If this were mapped to the original formatting it would be easier to see what wa
      8  NA         NA    NA     NA       NA       NA   NA    1217 ko7rqq
 ```
 
-## Usage
+## Getting Started
 
 The command used to go from a fl file to a csv file, which is comma separated, is:
 
-```
+```sh
+# get the data
+wget https://raw.githubusercontent.com/alexhallam/fwdt/main/test/data/radio_log_small.csv
+# output the imputed csv file
 fwdt -s, test/data/radio_log_small.csv
 ```
 The output is 
@@ -97,6 +100,20 @@ date,group,mycall,operator,received,sent,freq,time,call
 2022-08-08,cw,wq8R,wq8R,599,599,14.223,1217,a8rat
 2022-08-08,cw,wq8R,wq8R,599,599,14.223,1217,ko7rqq
 ```
+
+## Automatic Updates
+
+I prefer immediate feedback. It is possible to pipe the output of `fwdt` to `tidy-viewer`. If `entr` is used then previews of data changes can be made each time the file is saved!
+
+ <h1 align="center">
+    <img src="img/auto_updates.png" alt="alternate text">
+ </h1>
+
+```sh
+find . | entr sh -c 'fwdt -s, radio_log_small.csv | tidy-viewer'
+```
+
+
 
 ## How to make a valid fast log file
 
