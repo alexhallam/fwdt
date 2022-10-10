@@ -104,4 +104,37 @@ date,group,mycall,operator,received,sent,freq,time,call
 cargo install fwdt
 ```
 
+## Scorch
+
+> How do I know when to use fl files over csv?
+
+Scorch is defined as `[1 - (fl_word_count/csv_word_count)]`. Using the example at the top of the page `fl_word_count=187` and `csv_word_count=453`, so `1 - (187/453) ~ 59%`. This is an uncommonly high scorch. It 
+represents the percent of text saved by using a fl file over a complete csv. Even if scorch is smaller, %5, 
+that is still %5 that will not have to entered by hand thus will be error free. 
+
+
+
 ## Help
+
+```
+fwdt 0.1.0
+📝🔥 Few Word Do Trick (fwdt) is a fast data logger 📝🔥
+
+    Example Usage:
+    fwdt -s, data.csv
+
+USAGE:
+    fwdt [FLAGS] [OPTIONS] [FILE]
+
+FLAGS:
+    -d, --debug-mode    Print object details to make it easier for the maintainer to find and resolve bugs.
+    -h, --help          Prints help information
+    -V, --version       Prints version information
+
+OPTIONS:
+    -s, --delimiter <delimiter>    The delimiter separating the columns. Example #1 `fwdt -s ' '
+                                   test/data/power_lift.csv`. Example #2 `fwdt -s, test/data/radio_log_small.csv`
+
+ARGS:
+    <FILE>    Data file to process
+```
