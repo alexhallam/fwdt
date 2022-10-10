@@ -98,6 +98,14 @@ date,group,mycall,operator,received,sent,freq,time,call
 2022-08-08,cw,wq8R,wq8R,599,599,14.223,1217,ko7rqq
 ```
 
+## How to make a valid fast log file
+
+The rules are very simple.
+
+1. The first two lines (column headers and the first line of data) must be complete.
+2. All subsequent lines are replaced by the right most column. (Put columns that change the most frequently to the right).
+
+
 ## Install
 
 ```
@@ -111,14 +119,6 @@ cargo install fwdt
 Scorch is defined as `[1 - (fl_word_count/csv_word_count)]`. Using the example at the top of the page `fl_word_count=187` and `csv_word_count=453`, so `1 - (187/453) ~ 59%`. This is an uncommonly high scorch. It 
 represents the percent of text saved by using a fl file over a complete csv. Even if scorch is smaller, 5%, 
 that is still 5% that will not have to entered by hand thus will be error free. 
-
-## How to make a valid fast log file
-
-The rules are very simple.
-
-1. The first two lines (column headers and the first line of data) must be complete.
-2. All subsequent lines are replaced by the right most column. (Put columns that change the most frequently to the right).
-
 
 ## Help
 
