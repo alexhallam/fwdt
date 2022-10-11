@@ -3,7 +3,8 @@ name: Build, bump tag version and release
 on:
   push:
     branches:
-      - main
+      - 'main'
+
 
 jobs:
   release:
