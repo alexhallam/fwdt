@@ -1,5 +1,4 @@
-# https://mateuscosta.me/rust-releases-with-github-actions
- name: Build, bump tag version and release
+name: Build, bump tag version and release
 
 on:
   push:
