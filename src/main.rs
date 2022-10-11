@@ -65,8 +65,15 @@ fn main() {
     // let regex_blank_line = Regex::new(r#"^\s*$"#).unwrap();
     // let regex_null_line = Regex::new(r#"(<.*?>)"#).unwrap();
     // read data file
-    let fp: File = File::open(Path::new(&opt.file.unwrap().as_path())).unwrap();
-    let binding = [opt.delimiter.unwrap()];
+    let fp: File = File::open(Path::new(
+        &opt.file
+            .expect("A file is required. For example: fwdt -s, data.csv")
+            .as_path(),
+    ))
+    .unwrap();
+    let binding = [opt
+        .delimiter
+        .expect("A separator is required. For example: fwdt -s, data.csv")];
     let delim = match str::from_utf8(&binding) {
         Ok(v) => v.clone(),
         Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
