@@ -31,7 +31,44 @@ Data entry by humans is error prone. I know this from first hand experience. Tho
 
 Recently I stumbled across a ham radio data logger [fle](https://df3cb.com/fle/). It is a domain specific language (DSL) which allows data entry with minimal repetition. This command line utility is similar in spirit, but does not invent its own Amature Radio specific DSL. It uses incomplete csv files as the data input and outputs complete csv files.
 
-## Example
+
+## Getting Started
+
+The command used to go from a fl file to a csv file, which is comma separated, is:
+
+```sh
+# get the data
+wget https://raw.githubusercontent.com/alexhallam/fwdt/main/test/data/radio_log_small.csv
+# output the imputed csv file
+fwdt -s, test/data/radio_log_small.csv
+```
+The output is 
+
+```
+date,group,mycall,operator,received,sent,freq,time,call
+2022-08-08,cw,wq8R,wq8R,599,599,7.2230,1107,qr3e
+2022-08-08,cw,wq8R,wq8R,599,599,7.2230,1113,kn6h
+2022-08-08,cw,wq8R,wq8R,599,599,7.2230,1127,ae0bc
+2022-08-08,cw,wq8R,wq8R,599,599,7.2230,1207,ae4bc
+2022-08-08,cw,wq8R,wq8R,599,599,14.223,1207,qr3e
+2022-08-08,cw,wq8R,wq8R,599,599,14.223,1213,kn6h
+2022-08-08,cw,wq8R,wq8R,599,599,14.223,1217,a8rat
+2022-08-08,cw,wq8R,wq8R,599,599,14.223,1217,ko7rqq
+```
+
+## Automatic Updates
+
+I prefer immediate feedback. It is possible to pipe the output of `fwdt` to `tidy-viewer`. If `entr` is used then previews of data changes can be made each time the file is saved!
+
+ <h1 align="center">
+    <img src="img/auto_updates.png" alt="alternate text">
+ </h1>
+
+```sh
+find . | entr sh -c 'fwdt -s, radio_log_small.csv | tidy-viewer'
+```
+
+## Details
 
 Assume a user has the final dataset in mind. Using `wc -m` The character count is `453`.
 
@@ -76,43 +113,6 @@ If this were mapped to the original formatting it would be easier to see what wa
      7  NA         NA    NA     NA       NA       NA   NA    1217 a8rat  
      8  NA         NA    NA     NA       NA       NA   NA    1217 ko7rqq
 ```
-
-## Getting Started
-
-The command used to go from a fl file to a csv file, which is comma separated, is:
-
-```sh
-# get the data
-wget https://raw.githubusercontent.com/alexhallam/fwdt/main/test/data/radio_log_small.csv
-# output the imputed csv file
-fwdt -s, test/data/radio_log_small.csv
-```
-The output is 
-
-```
-date,group,mycall,operator,received,sent,freq,time,call
-2022-08-08,cw,wq8R,wq8R,599,599,7.2230,1107,qr3e
-2022-08-08,cw,wq8R,wq8R,599,599,7.2230,1113,kn6h
-2022-08-08,cw,wq8R,wq8R,599,599,7.2230,1127,ae0bc
-2022-08-08,cw,wq8R,wq8R,599,599,7.2230,1207,ae4bc
-2022-08-08,cw,wq8R,wq8R,599,599,14.223,1207,qr3e
-2022-08-08,cw,wq8R,wq8R,599,599,14.223,1213,kn6h
-2022-08-08,cw,wq8R,wq8R,599,599,14.223,1217,a8rat
-2022-08-08,cw,wq8R,wq8R,599,599,14.223,1217,ko7rqq
-```
-
-## Automatic Updates
-
-I prefer immediate feedback. It is possible to pipe the output of `fwdt` to `tidy-viewer`. If `entr` is used then previews of data changes can be made each time the file is saved!
-
- <h1 align="center">
-    <img src="img/auto_updates.png" alt="alternate text">
- </h1>
-
-```sh
-find . | entr sh -c 'fwdt -s, radio_log_small.csv | tidy-viewer'
-```
-
 
 
 ## How to make a valid fast log file
