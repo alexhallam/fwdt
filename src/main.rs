@@ -1,13 +1,11 @@
 // auto rerun with
 // cargo install cargo-watch
 // cargo watch -x 'run -- -s, test/data/radio_log_small.csv'
-use assert_cmd::prelude::*; // Add methods on commands
-use predicates::prelude::*; // Used for writing assertions
+
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::Command; // Run programs
 
 use csv;
 //use regex::Regex;
@@ -212,6 +210,8 @@ fn main() {
 
 mod tests {
     use super::*;
+    use assert_cmd::Command;
+    use predicates::prelude::*;
 
     #[test]
     fn file_doesnt_exist() -> Result<(), Box<dyn std::error::Error>> {
