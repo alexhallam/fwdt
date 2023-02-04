@@ -16,6 +16,11 @@ regex = "1.6.0"
 csv = "1.1.6"
 structopt = "0.3.26"
 
+[dev-dependencies]
+assert_cmd = "2.0.7"
+predicates = "2.1.5"
+
+
 [package.metadata.deb]
 assets = [
   [
