@@ -140,7 +140,7 @@ that is still 5% that will not have to entered by hand thus will be error free.
 ## Help
 
 ```
-fwdt 0.1.0
+fwdt 0.1.2
 📝🔥 Few Word Do Trick (fwdt) is a fast data logger 📝🔥
 
     Example Usage:
@@ -150,13 +150,15 @@ USAGE:
     fwdt [FLAGS] [OPTIONS] [FILE]
 
 FLAGS:
-    -d, --debug-mode    Print object details to make it easier for the maintainer to find and resolve bugs.
+    -b, --debug-mode    Print object details to make it easier for the maintainer to find and resolve bugs.
     -h, --help          Prints help information
     -V, --version       Prints version information
 
 OPTIONS:
     -s, --delimiter <delimiter>    The delimiter separating the columns. Example #1 `fwdt -s ' '
                                    test/data/power_lift.csv`. Example #2 `fwdt -s, test/data/radio_log_small.csv`
+    -d, --ditto <ditto>            A Ditto Mark to explicitly tell the program to fill cell with the previous line's
+                                   cell value. Example #1 `fwdt -s, -d. test/data/radio_log_small.csv` [default: .]
 
 ARGS:
     <FILE>    Data file to process

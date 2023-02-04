@@ -6,7 +6,7 @@ license = "Unlicense/MIT"
 readme = "README.md"
 repository = "https://github.com/alexhallam/fwdt"
 name = "fwdt"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -15,6 +15,11 @@ edition = "2021"
 regex = "1.6.0"
 csv = "1.1.6"
 structopt = "0.3.26"
+
+[dev-dependencies]
+assert_cmd = "2.0.8"
+predicates = "2.1.5"
+
 
 [package.metadata.deb]
 assets = [
